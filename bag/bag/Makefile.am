@@ -1,11 +1,6 @@
-####### kdevelop will overwrite this part!!! (begin)##########
-noinst_LIBRARIES = libbag.a
-
 INCLUDES = $(all_includes)
 
-libbag_a_SOURCES = bag.c 
+bin_PROGRAMS = bag
 
-
-EXTRA_DIST = bag.c 
-
-####### kdevelop will overwrite this part!!! (end)############
+bag_SOURCES = bag.c 
+bag_LDADD = -lreadline

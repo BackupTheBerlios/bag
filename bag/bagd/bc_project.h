@@ -1,9 +1,9 @@
 /***************************************************************************
-                          bag.c  -  description
+                          bc_project.h  -  project handling
                              -------------------
-    begin                : Tue Aug 20 2002
-    copyright            : (C) 2002 by konrad
-    email                : konrad@zaphod
+    begin                : Thu Mar 6 2003
+    copyright            : (C) 2003 by Konrad Rosenbaum
+    email                : konrad.rosenbaum@gmx.net
  ***************************************************************************/
 
 /***************************************************************************
@@ -15,25 +15,15 @@
  *                                                                         *
  ***************************************************************************/
 
-#include <stdio.h>
-#include <readline/readline.h>
-#include <readline/history.h>
+#ifndef BAGD_PROJECT_H
+#define BAGD_PROJECT_H
+
+void projects_handler(int argc,char**argv,int bloblen,void*blob);
+void createproject_handler(int argc,char**argv,int bloblen,void*blob);
+void projectbranches_handler(int argc,char**argv,int bloblen,void*blob);
+void projectacl_handler(int argc,char**argv,int bloblen,void*blob);
+void projectbranchacl_handler(int argc,char**argv,int bloblen,void*blob);
+void projectcreatebranch_handler(int argc,char**argv,int bloblen,void*blob);
 
 
-
-int main(int argc,char**argv)
-{
-        char *ln;
-        for(;;){
-                ln=readline("bag> ");
-                if(ln){
-                        if(*ln){
-                                add_history(ln);
-                                /*parse line*/
-                                if(!strcmp("exit",ln))return 0;
-                        }
-                        free(ln);
-                }else return 0;
-        }
-}
-
+#endif /*BAGD_PROJECT_H*/

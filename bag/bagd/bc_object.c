@@ -1,9 +1,9 @@
 /***************************************************************************
-                          bag.c  -  description
+                          bc_object.c  -  description
                              -------------------
-    begin                : Tue Aug 20 2002
-    copyright            : (C) 2002 by konrad
-    email                : konrad@zaphod
+    begin                : Fri Mar 7 2003
+    copyright            : (C) 2003 by Konrad Rosenbaum
+    email                : konrad.rosenbaum@gmx.net
  ***************************************************************************/
 
 /***************************************************************************
@@ -15,25 +15,16 @@
  *                                                                         *
  ***************************************************************************/
 
-#include <stdio.h>
-#include <readline/readline.h>
-#include <readline/history.h>
+#include "bc_object.h"
+#include "bagchild.h"
+#include "bc_user.h"
+#include "bc_auth.h"
+#include "query.h"
+#include "defines.h"
+#include "sql.h"
+#include "bagd.h"
+#include "log.h"
 
+#include "../libbag/dynbuf.h"
 
-
-int main(int argc,char**argv)
-{
-        char *ln;
-        for(;;){
-                ln=readline("bag> ");
-                if(ln){
-                        if(*ln){
-                                add_history(ln);
-                                /*parse line*/
-                                if(!strcmp("exit",ln))return 0;
-                        }
-                        free(ln);
-                }else return 0;
-        }
-}
-
+#include <stdlib.h>

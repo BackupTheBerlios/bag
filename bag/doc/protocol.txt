@@ -36,7 +36,7 @@ Strings which contain special characters may be quoted:
 VRL - Version Ressource Locator
 ---------------------------------
 
-<proto>://<server>/<project>/<branch>/<objid>/<version>
+[<proto>://<server>]/<project>/<branch>/<objid>/<version>
 
 <proto>: bagp, bagps
 <server>: #<virtual server>, <server-name-or-ip>[:<port>], self
@@ -135,8 +135,8 @@ projectbranchacl <project> <branch> <user> [<aclstring>]
 projectbranches <project>
  list all branches of the project
 
-projectcreatebranch <project> <newbranch> <VRL>
- create a new branch starting with VRL  (may contain a query)
+projectcreatebranch <project> <newbranch>
+ create a new branch (empty)
 
 Objects
 ----------
@@ -172,6 +172,15 @@ getmergepoints <VRL>
 
 setmergepoint <VRL> <VRL>
 
+copyobject <VRL> <VRL>
+ Copy an object from VRL 1 to VRL 2 and set the according merge point, the
+ object must not exist in the target branch
+ 
+copyobjects
+ the blob contains the VRL pairs to copy
+
+copybranch <VRL> <VRL>
+ Copy the complete branch (newest version), the second branch must be empty
 
 Watching
 ----------
