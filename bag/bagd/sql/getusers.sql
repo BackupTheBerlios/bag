@@ -1,0 +1,1 @@
+SELECT usrname,usrauthmethod FROM vcsuser;

@@ -2,7 +2,7 @@
 # this program is free software and protected by the GNU GPL version 2 or
 # (at your option) any newer, see file COPYING for details
 #
-# (c) Konrad Rosebaum, 2002
+# (c) Konrad Rosenbaum, 2002
 
 
 dnl Process this file with autoconf to produce a configure script.
@@ -36,7 +36,7 @@ AM_PATH_LIBGNUTLS( 0.4.2, [
 ***
 ]]))
 
-AM_CONDITIONAL(HAVE_GNUTLS,[test have_gnutls = 1])
+AM_CONDITIONAL(HAVE_GNUTLS,[test x$have_gnutls = x1])
 
 dnl Checks for header files.
 
@@ -60,14 +60,15 @@ if test "$HAVE_POSTGRES" != 1 ; then
 ]])
 fi
 
-AM_CONDITIONAL(HAVE_POSTGRES,[test $HAVE_POSTGRES = 1])
+AM_CONDITIONAL(HAVE_POSTGRES,[test x$HAVE_POSTGRES = x1])
 
 
 dnl PAM
 
 AC_CHECK_LIB(pam, pam_authenticate, [
 	AC_DEFINE(HAVE_PAM)
-	AC_SUBST(PAM_LDFLAGS,"-lpam")
+	PAM_LDFLAGS="-lpam"
+	AC_SUBST(PAM_LDFLAGS)
 ])
 
 AC_OUTPUT(./Makefile libbag/Makefile bagd/Makefile bag/Makefile doc/Makefile diff/Makefile bagd/sql/Makefile Makefile tools/Makefile )

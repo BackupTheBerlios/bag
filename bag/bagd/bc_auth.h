@@ -1,5 +1,5 @@
 /***************************************************************************
-                          bc_auth.h  -  description
+                          bc_auth.h  -  child - authentication handling
                              -------------------
     begin                : Fri Oct 4 2002
     copyright            : (C) 2002 by Konrad Rosenbaum

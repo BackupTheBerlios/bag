@@ -24,9 +24,9 @@
 #include <termios.h>
 #include <unistd.h>
 
-#include <libpq-fe.h>
 
 #include "sql.h"
+#include "query.h"
 
 #define GRANT_SELECT "select"
 #define GRANT_ALL "select,insert,update,delete"
@@ -238,13 +238,13 @@ int main(int argc,char**argv)
                         opt==-1?"Unable to call createuser.":"Bad return code from createuser.");
         }
         
-        res=PQexec(con,query(SQL_GRANT,GRANT_ALL,inituser));
+/*        res=PQexec(con,query(SQL_GRANT,GRANT_ALL,inituser));
         if(!res || PQresultStatus(res) != PGRES_COMMAND_OK){
-                fprintf(stderr,"Unable to grant privileges to initial user %s: %s\n"
+                fprintf(stderr,"Unable to grant privileges to initial user %s: %s\n",
                         inituser,PQerrorMessage(con));
-                if(res)PQclear(re);
+                if(res)PQclear(res);
                 exitdb(con);
-        }
+        }*/
 
         
 }

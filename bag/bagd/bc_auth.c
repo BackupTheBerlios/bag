@@ -1,5 +1,5 @@
 /***************************************************************************
-                          bc_auth.c  -  description
+                          bc_auth.c  -  child - authentication handling
                              -------------------
     begin                : Sat Oct 5 2002
     copyright            : (C) 2002 by Konrad Rosenbaum
@@ -15,6 +15,7 @@
  *                                                                         *
  ***************************************************************************/
 
+#include "../config.h"
 #include "bagchild.h"
 #include "bc_auth.h"
 #include "bc_main.h"
@@ -28,15 +29,15 @@
 #include "sql.h"
 #include "query.h"
 #include "log.h"
+#include "defines.h"
 
 /*FIXME: username is allocated but not freed*/
 char*username=0;
 
 
-#define E_SYNTAX "-0 auth: bad syntax\n"
+/*#define E_SYNTAX "-0 auth: bad syntax\n"*/
 #define E_NOUSER "-0 auth: no such user\n"
 #define E_NOPERM "-0 auth: user locked, wrong password, or wrong certificate\n"
-#define E_STORAGE "-0 internal storage error, please contact the server admin\n"
 
 #define E_AUTHOK "+0 auth: ok\n"
 
@@ -80,7 +81,7 @@ static int pamauth(const char*user,struct pam_conv*conv)
 
     if (pam_end(pamh,retval) != PAM_SUCCESS) {     /* close Linux-PAM */
         pamh = NULL;
-        fprintf(stderr, "ERROR failed to release authenticator\n");
+        log(LOG_ERR, "failed to release authenticator");
         exit(1);
     }
 
@@ -93,10 +94,10 @@ static int pamauth(const char*user,struct pam_conv*conv)
 static void auth_handler(int argc,char**argv,int bloblen,void*blob)
 {
         char*uname;
-        PGresult *res;
+        dbResult *res;
         int method=0;
         
-        log(LOG_DEBUG,"authenticating\n");
+        log(LOG_DEBUG,"authenticating");
 
         /*check arguments*/
         if(argc<2||argc>3){
@@ -106,23 +107,23 @@ static void auth_handler(int argc,char**argv,int bloblen,void*blob)
         
         /*select by username*/
         uname=argv[1];
-        res=PQexec(bc_con,query(SQL_GETUSER,uname));
+        res=query(bc_con,SQL_GETUSER,uname);
 
-        if(PQntuples(res)<1){
+        if(dbNumRows(res)<1){
                 bc_hdl->sockwriter(bc_hdl,E_NOUSER,strlen(E_NOUSER));
-                PQclear(res);
+                dbFree(res);
                 return;
         }
-        if(PQgetisnull(res,0,PQfnumber(res,"usrauthmethod"))){
+        if(dbIsNullByname(res,0,"usrauthmethod")){
                 bc_hdl->sockwriter(bc_hdl,E_STORAGE,strlen(E_STORAGE));
-                PQclear(res);
+                dbFree(res);
                 return;
         }
-        method=atoi(PQgetvalue(res,0,PQfnumber(res,"usrauthmethod")));
+        method=dbGetIntByname(res,0,"usrauthmethod");
 
         /*check whether locked*/
         if(method&AUTH_LOCKED){
-                PQclear(res);
+                dbFree(res);
                 bc_hdl->sockwriter(bc_hdl,E_NOPERM,strlen(E_NOPERM));
                 return;
         }
@@ -138,7 +139,7 @@ static void auth_handler(int argc,char**argv,int bloblen,void*blob)
                         pamconv.appdata_ptr=argv[2];
                         if(pamauth(uname,&pamconv)){
                                 username=strdup(uname);
-                                PQclear(res);
+                                dbFree(res);
                                 bc_hdl->sockwriter(bc_hdl,E_AUTHOK,strlen(E_AUTHOK));
                                 return;
                         }
@@ -148,11 +149,11 @@ static void auth_handler(int argc,char**argv,int bloblen,void*blob)
                         char mdb[33],*pwd;
                         
                         md5_hex_buffer(argv[2],strlen(argv[2]),mdb);
-                        if(!PQgetisnull(res,0,PQfnumber(res,"usrpasswd"))){
-                                pwd=PQgetvalue(res,0,PQfnumber(res,"usrpasswd"));
+                        if(!dbIsNullByname(res,0,"usrpasswd")){
+                                pwd=dbGetStringByname(res,0,"usrpasswd");
                                 if(!strcmp(mdb,pwd)){
                                         username=strdup(uname);
-                                        PQclear(res);
+                                        dbFree(res);
                                         bc_hdl->sockwriter(bc_hdl,E_AUTHOK,strlen(E_AUTHOK));
                                         return;
                                 }
@@ -169,7 +170,7 @@ static void auth_handler(int argc,char**argv,int bloblen,void*blob)
                 //free(buf);
                 if(ret){
                         username=strdup(uname);
-                        PQclear(res);
+                        dbFree(res);
                         bc_hdl->sockwriter(bc_hdl,E_AUTHOK,strlen(E_AUTHOK));
                         return;
                 }
@@ -177,7 +178,7 @@ static void auth_handler(int argc,char**argv,int bloblen,void*blob)
         }
 
         /*not able to authenticate*/
-        PQclear(res);
+        dbFree(res);
         bc_hdl->sockwriter(bc_hdl,E_NOPERM,strlen(E_NOPERM));
         return;
 }

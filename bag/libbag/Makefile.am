@@ -1,4 +1,3 @@
-####### kdevelop will overwrite this part!!! (begin)##########
+lib_LTLIBRARIES = libbag.la
 
-
-####### kdevelop will overwrite this part!!! (end)############
+libbag_la_SOURCES = dynbuf.c

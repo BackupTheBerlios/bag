@@ -2,10 +2,11 @@ if HAVE_POSTGRES
 bin_PROGRAMS = bagdinitdb bagd
 endif
 
-bagdinitdb_SOURCES = bagdinitdb.c
-bagd_SOURCES = bagd.c bagchild.c bagstream.c bagssl.c bc_main.c bc_auth.c log.c md5.c query.c misc.c
+bagdinitdb_SOURCES = bagdinitdb.c query.c log.c
+bagd_SOURCES = bagd.c bagchild.c bagstream.c bagssl.c bc_main.c bc_auth.c bc_user.c query.c log.c md5.c misc.c
 bagd_LDFLAGS = @LIBGNUTLS_LIBS@ @POSTGRES_LDFLAGS@ @PAM_LDFLAGS@
 bagd_CFLAGS  = @LIBGNUTLS_CFLAGS@ @POSTGRES_CFLAGS@
+bagd_LDADD   = ../libbag/libbag.la
 bagdinitdb_LDFLAGS = @POSTGRES_LDFLAGS@
 bagdinitdb_CFLAGS  = @POSTGRES_CFLAGS@
 

@@ -16,7 +16,6 @@
  ***************************************************************************/
 
 #include "../config.h"
-#include <libpq-fe.h>
 #include "sql.h"
 #include "log.h"
 #include "query.h"
@@ -97,26 +96,23 @@ static void deconfig()
 /*load configuration from the server, currently only sockets are supported*/
 static void config()
 {
-        PGconn *con;
+        dbConn *con;
         int i;
         char*s;
-        PGresult *res;
-        con=PQconnectdb(connectstring);
-        if(PQstatus(con)==CONNECTION_BAD){
-                log(LOG_ERR,"Connection Error: %s\n",PQerrorMessage(con));
-                PQfinish(con);
+        dbResult *res;
+        con=dbConnect(connectstring);
+        if(con==0){
                 exit(1);
         }
 
-        res=PQexec(con,query(SQL_GETOPTIONS,servername));
-        if(!res || PQresultStatus(res) != PGRES_TUPLES_OK){
-                log(LOG_ERR,"Unable to get configuration: %s\n",PQerrorMessage(con));
-                if(res)PQclear(res);
-                PQfinish(con);
+        res=query(con,SQL_GETOPTIONS,servername);
+        if(!res){
+                log(LOG_ERR,"Unable to get configuration.");
+                dbClose(con);
                 exit(1);
         }
 
-        nsockets=PQntuples(res);
+        nsockets=dbNumRows(res);
 
         sockets=malloc(sizeof(int)*nsockets);
         isssl=malloc(sizeof(int)*nsockets);
@@ -125,19 +121,22 @@ static void config()
         for(i=0;i<nsockets;i++){
                 char*x;
                 int t;/*0=error, 1=TCP, 2=AF_UNIX, 3=TCPv6 ...*/
-                s=PQgetvalue(res,i,1);
+                s=dbGetString(res,i,1);
                 sockets[i]=-1;t=0;
                 socketpaths[i]=0;
                 if(!strncmp("tcp:",s,4)){t=1;x=s+4;isssl[i]=0;}else
-                if(!strncmp("ssl:",s,4)){t=1;x=s+4;isssl[i]=1;}else
                 if(!strncmp("tcp6:",s,5)){t=3;x=s+5;isssl[i]=0;}else
-                if(!strncmp("ssl6:",s,5)){t=3;x=s+5;isssl[i]=1;}else
                 if(!strncmp("local:",s,6)){t=2;x=s+6;isssl[i]=0;}else
-                if(!strncmp("unix:",s,5)){t=2;x=s+5;isssl[i]=0;}else
+                if(!strncmp("unix:",s,5)){t=2;x=s+5;isssl[i]=0;}
+#ifdef HAVE_GNUTLS
+                else
+                if(!strncmp("ssl:",s,4)){t=1;x=s+4;isssl[i]=1;}else
+                if(!strncmp("ssl6:",s,5)){t=3;x=s+5;isssl[i]=1;}else
                 if(!strncmp("slocal:",s,7)){t=2;x=s+7;isssl[i]=1;}else
                 if(!strncmp("sunix:",s,6)){t=2;x=s+6;isssl[i]=1;}
+#endif
                 else{
-                        log(LOG_WARNING,"Failed opening socket %s, unknown type.\n",s);
+                        log(LOG_WARNING,"Failed opening socket %s, unknown type.",s);
                         continue;
                 }
                 switch(t){
@@ -146,28 +145,28 @@ static void config()
                                 int sopt,port;
                                 sockets[i]=socket(PF_INET,SOCK_STREAM,0);
                                 if(sockets[i]==-1){
-                                        log(LOG_WARNING,"Unable to allocate TCP socket %s: %s\n",s,strerror(errno));
+                                        log(LOG_WARNING,"Unable to allocate TCP socket %s: %s",s,strerror(errno));
                                         continue;
                                 }
                                 sopt=1;
                                 if(setsockopt(sockets[i],SOL_SOCKET,SO_REUSEADDR,&sopt,sizeof(sopt))==-1)
-                                        log(LOG_WARNING,"Unable to set reuse socket option on %s.\n",s);
+                                        log(LOG_WARNING,"Unable to set reuse socket option on %s.",s);
                                 si.sin_family=AF_INET;
                                 si.sin_addr.s_addr=htonl(INADDR_ANY);
                                 si.sin_port=port=htons(atoi(x));
                                 if(bind(sockets[i],&si,sizeof(si))==-1){
-                                        log(LOG_WARNING,"Unable to bind TCP socket %s: %s\n",s,strerror(errno));
+                                        log(LOG_WARNING,"Unable to bind TCP socket %s: %s",s,strerror(errno));
                                         close(sockets[i]);
                                         sockets[i]=-1;
                                         continue;
                                 }
                                 if(listen(sockets[i],5)==-1){
-                                        log(LOG_WARNING,"Unable to set TCP socket %s to listen mode: %s\n",s,strerror(errno));
+                                        log(LOG_WARNING,"Unable to set TCP socket %s to listen mode: %s",s,strerror(errno));
                                         close(sockets[i]);
                                         sockets[i]=-1;
                                         continue;
                                 }
-                                log(LOG_INFO,"Successfully initialized TCP socket %s. Port=%i FD=%i.\n",s,ntohs(port),sockets[i]);
+                                log(LOG_INFO,"Successfully initialized TCP socket %s. Port=%i FD=%i.",s,ntohs(port),sockets[i]);
                                 break;
                         }
                         case 3:{/*tcp6*/
@@ -175,66 +174,66 @@ static void config()
                                 int sopt,port;
                                 sockets[i]=socket(PF_INET6,SOCK_STREAM,0);
                                 if(sockets[i]==-1){
-                                        log(LOG_WARNING,"Unable to allocate TCPv6 socket %s: %s\n",s,strerror(errno));
+                                        log(LOG_WARNING,"Unable to allocate TCPv6 socket %s: %s",s,strerror(errno));
                                         continue;
                                 }
                                 if(setsockopt(sockets[i],SOL_SOCKET,SO_REUSEADDR,&sopt,sizeof(sopt))==-1)
-                                        log(LOG_WARNING,"Unable to set reuse socket option on %s.\n",s);
+                                        log(LOG_WARNING,"Unable to set reuse socket option on %s.",s);
                                 si.sin6_family=AF_INET6;
                                 si.sin6_addr=in6addr_any;
                                 si.sin6_port=port=htons(atoi(x));
                                 if(bind(sockets[i],&si,sizeof(si))==-1){
-                                        log(LOG_WARNING,"Unable to bind TCPv6 socket %s: %s\n",s,strerror(errno));
+                                        log(LOG_WARNING,"Unable to bind TCPv6 socket %s: %s",s,strerror(errno));
                                         close(sockets[i]);
                                         sockets[i]=-1;
                                         continue;
                                 }
                                 if(listen(sockets[i],5)==-1){
-                                        log(LOG_WARNING,"Unable to set TCPv6 socket %s to listen mode: %s\n",s,strerror(errno));
+                                        log(LOG_WARNING,"Unable to set TCPv6 socket %s to listen mode: %s",s,strerror(errno));
                                         close(sockets[i]);
                                         sockets[i]=-1;
                                         continue;
                                 }
-                                log(LOG_INFO,"Successfully initialized TCPv6 socket %s. Port=%i FD=%i.\n",s,ntohs(port),sockets[i]);
+                                log(LOG_INFO,"Successfully initialized TCPv6 socket %s. Port=%i FD=%i.",s,ntohs(port),sockets[i]);
                                 break;
                         }
                         case 2:{/*local*/
                                 struct sockaddr_un su;
                                 sockets[i]=socket(PF_UNIX,SOCK_STREAM,0);
                                 if(sockets[i]==-1){
-                                        log(LOG_WARNING,"Unable to allocate AF_UNIX socket %s: %s\n",s,strerror(errno));
+                                        log(LOG_WARNING,"Unable to allocate AF_UNIX socket %s: %s",s,strerror(errno));
                                         continue;
                                 }
                                 su.sun_family=AF_UNIX;
                                 strcpy(su.sun_path,x);
                                 unlink(x);
                                 if(bind(sockets[i],&su,sizeof(su))==-1){
-                                        log(LOG_WARNING,"Unable to bind AF_UNIX socket %s: %s\n",s,strerror(errno));
+                                        log(LOG_WARNING,"Unable to bind AF_UNIX socket %s: %s",s,strerror(errno));
                                         close(sockets[i]);
                                         sockets[i]=-1;
                                         continue;
                                 }
                                 if(listen(sockets[i],5)==-1){
-                                        log(LOG_WARNING,"Unable to set AF_UNIX socket %s to listen mode: %s\n",s,strerror(errno));
+                                        log(LOG_WARNING,"Unable to set AF_UNIX socket %s to listen mode: %s",s,strerror(errno));
                                         close(sockets[i]);
                                         sockets[i]=-1;
                                         unlink(x);
                                         continue;
                                 }
-                                log(LOG_INFO,"Successfully initialized socket %s.\n",s);
+                                log(LOG_INFO,"Successfully initialized socket %s.",s);
                                 socketpaths[i]=malloc(strlen(x)+1);
                                 strcpy(socketpaths[i],x);
                                 break;
                         }
                         default:/*error/unknown*/
-                                log(LOG_WARNING,"Unknown socket type or internal error: %s.\n",s);
+                                log(LOG_WARNING,"Unknown socket type or internal error: %s.",s);
                                 continue;
                                 break;
                 }
         }
         
-        PQclear(res);
-        PQfinish(con);
+        dbFree(res);
+        dbClose(con);
 }
 
 /*add a child process to the list*/
@@ -285,28 +284,33 @@ static void bagdsighandler(int sig)
                 }
                 case SIGCHLD:{
                         int stat;
+                        char*type="?unknown event?";
                         pid_t pid;
                         pid=waitpid(-1,&stat,WNOHANG|WUNTRACED);
                         if(pid>0 && (WIFEXITED(stat) || WIFSIGNALED(stat)))
                                 delchild(pid);
 
-                        log(LOG_DEBUG,"SIGCHLD: pid=%i status=%i\n",(int)pid,stat);
+                        if(WIFEXITED(stat))type="exited normally";
+                        if(WIFSIGNALED(stat))type="killed by signal";
+                        log(LOG_DEBUG,"SIGCHLD: pid=%i status=%i signal=%i %s",(int)pid,
+                                WEXITSTATUS(stat),WTERMSIG(stat),type);
                         break;
                 }
                 default:
                         deconfig();
+                        log(LOG_INFO,"got signal %i, exiting",sig);
                         exit(0);
                         break;
         }
 }
 
 /*create a child process to handle a connection*/
-static void spawnchild(int fd,int usessl,char*argv1)
+static void spawnchild(int fd,int usessl)
 {
         pid_t pid;
         pid=fork();
         if(pid<0){
-                log(LOG_WARNING,"Unable to spawn another process: %s.\n",strerror(errno));
+                log(LOG_WARNING,"Unable to spawn another process: %s.",strerror(errno));
                 close(fd);
                 return;
         }else
@@ -318,7 +322,6 @@ static void spawnchild(int fd,int usessl,char*argv1)
                 /*close all server sockets (to enable clients to run on,
                   while the server reconfigures)*/
                 closeall();
-                strcpy(argv1,"child ");
                 /*switch to child mode*/
                 bagchild(sh,connectstring);
                 exit(0);
@@ -349,6 +352,8 @@ void daemonize()
 \t\t\toutput version number and exit\n\n\
 \t\t-d --debug\n\
 \t\t\tdon't go into daemon mode\n\n\
+\t\t-q --querydebug\n\
+\t\t\tdebug queries\n\n\
 \t\t-n --name --servername <name>\n\
 \t\t\tset the servername, used to distinguish configuration\n\
 \t\t\tof different servers on the same database\n\n\
@@ -365,12 +370,13 @@ static void help(const char*name)
 
 /*parse commandline*/
 static int godaemon=1;
-static char sopt[]="hvf:dn:";
+static char sopt[]="hvf:dn:q";
 static struct option lopt[]={
         {"help",0,0,'h'},
         {"version",0,0,'v'},
         {"file",1,0,'f'},
         {"debug",0,0,'d'},
+        {"querydebug",0,0,'q'},
         {"servername",1,0,'n'},
         {"name",1,0,'n'},
         {0,0,0,0}
@@ -388,6 +394,8 @@ static void handleoptions(int argc,char**argv)
                         case 'h':help(argv0);exit(0);break;
 
                         case 'd':godaemon=0;break;
+
+                        case 'q':querydebug++;break;
                         
                         case 'f':file=optarg;break;
 
@@ -401,20 +409,20 @@ static void handleoptions(int argc,char**argv)
         if(file){
                 fd=open(file,O_RDONLY);
                 if(fd<0){
-                        log(LOG_ERR,"Error opening file %s: %s\n",file,strerror(errno));
+                        log(LOG_ERR,"Error opening file %s: %s",file,strerror(errno));
                         exit(1);
                 }
                 c=lseek(fd,0,SEEK_END);
                 if(c>=0){
                         lseek(fd,0,SEEK_SET);
                 }else{
-                        log(LOG_ERR,"Error trying to get file length %s: %s\n",file,strerror(errno));
+                        log(LOG_ERR,"Error trying to get file length %s: %s",file,strerror(errno));
                         exit(1);
                 }
         }
         connectstring=malloc(l);
         if(connectstring==0){
-                log(LOG_ERR,"Cannot allocate enough memory for DB connection string.\n");
+                log(LOG_ERR,"Cannot allocate enough memory for DB connection string.");
                 exit(1);
         }
         if(file){
@@ -472,14 +480,14 @@ void main(int argc,char**argv)
                                 if(sockets[i]>m)m=sockets[i];
                         }
                 if(l==0){
-                        log(LOG_ERR,"Fatal error: no listening sockets remaining, exiting.\n");
+                        log(LOG_ERR,"Fatal error: no listening sockets remaining, exiting.");
                         exit(1);
                 }
                 i=select(m+1,&rd,0,0,0);
                 if(i==-1){
                         int e=errno;
                         if(e==EINTR)continue;
-                        log(LOG_ERR,"Fatal error on select: %s, exiting.\n",strerror(e));
+                        log(LOG_ERR,"Fatal error on select: %s, exiting.",strerror(e));
                         exit(1);
                 }
                 for(i=0;i<nsockets;i++)
@@ -488,10 +496,10 @@ void main(int argc,char**argv)
                                 if(fd<0){
                                         int e=errno;
                                         if(e==EAGAIN||e==EWOULDBLOCK)continue;
-                                        log(LOG_ERR,"Internal error on accept(%i,0,0): %s, exiting.\n",fd,strerror(e));
+                                        log(LOG_ERR,"Internal error on accept(%i,0,0): %s, exiting.",fd,strerror(e));
                                         exit(1);
                                 }
-                                spawnchild(fd,isssl[i],argv[1]);
+                                spawnchild(fd,isssl[i]);
                         }
 
         }

@@ -15,20 +15,62 @@
  *                                                                         *
  ***************************************************************************/
 
-#include <libpq-fe.h>
 #include "query.h"
+#include "log.h"
+
+/*debug-level*/
+int querydebug=0;
+
 
 #include <stdlib.h>
 #include <string.h>
 #include <stdlib.h>
 #include <stdarg.h>
 
-const char* query(const char*format,...)
+dbConn*dbConnect(const char*constring)
+{
+        PGconn *con;
+        con=PQconnectdb(constring);
+        if(PQstatus(con)==CONNECTION_BAD){
+                log(LOG_ERR,"Connection Error: %s",PQerrorMessage(con));
+                PQfinish(con);
+                return 0;
+        }else return con;
+}
+
+void dbClose(dbConn*con)
+{
+        PQfinish(con);
+}
+
+void dbFreeResult(dbResult*res){dbFree(res);}
+void dbFree(dbResult*res)
+{
+        PQclear(res);
+}
+
+int dbUpdateOK(dbResult*res)
+{
+        return res && PQresultStatus(res)==PGRES_COMMAND_OK;
+}
+
+int dbSelectOK(dbResult*res)
+{
+        return res && PQresultStatus(res)==PGRES_TUPLES_OK;
+}
+
+int dbNumRows(dbResult*res)
+{
+        return PQntuples(res);
+}
+
+dbResult* query(dbConn *con,const char*format,...)
 {
         static char*ret=0;
         char**parms;
         int i,j,k,pstat,cnt,size,flen;
         va_list va;
+        PGresult *res;
         /*exception: if format = NULL then delete old query only*/
         if(ret){
                 free(ret);
@@ -73,24 +115,24 @@ const char* query(const char*format,...)
                                         size+=l2;
                                         j++;
                                         break;
-                                case 'h':/*GNU C: short is transformed to in if passed through ...*/
+                                case 'h':/*GNU C: short is transformed to int if passed through ...*/
                                 case 'i':
                                         l=va_arg(va,int);
-                                        parms[j]=malloc(21);/*the highest long long is 20 chars, if int happens to be 64 bit*/
+                                        parms[j]=malloc(22);/*the highest long long is 20 chars, if int happens to be 64 bit*/
                                         sprintf(parms[j],"%i",(int)l);
                                         size+=strlen(parms[j]);
                                         j++;
                                         break;
                                 case 'l':
                                         l=va_arg(va,long);
-                                        parms[j]=malloc(21);/*the highest long long is 20 chars, if int happens to be 64 bit*/
+                                        parms[j]=malloc(22);/*the highest long long is 20 chars, if int happens to be 64 bit*/
                                         sprintf(parms[j],"%li",(long)l);
                                         size+=strlen(parms[j]);
                                         j++;
                                         break;
                                 case 'L':
                                         l=va_arg(va,long long);
-                                        parms[j]=malloc(21);/*the highest long long is 20 chars, if int happens to be 64 bit*/
+                                        parms[j]=malloc(22);/*the highest long long is 20 chars, if int happens to be 64 bit*/
                                         sprintf(parms[j],"%lli",(long long)l);
                                         size+=strlen(parms[j]);
                                         j++;
@@ -104,12 +146,13 @@ const char* query(const char*format,...)
                                         break;
                                 case 'o':
                                         l=va_arg(va,Oid);/*Oid is a kind of integer*/
-                                        parms[j]=malloc(21);/*the highest long long is 20 chars, if int happens to be 64 bit*/
+                                        parms[j]=malloc(22);/*the highest long long is 20 chars, if int happens to be 64 bit*/
                                         sprintf(parms[j],"%lli",(long long)l);
                                         size+=strlen(parms[j]);
                                         j++;
                                         break;
                                 default:/*error, unknown type*/
+                                        log(LOG_WARNING,"Unknown Query-Parameter type: %c",format[i]);
                                         for(i=0;i<cnt;i++)
                                                 if(parms[i])free(parms[i]);
                                         free(parms);
@@ -128,9 +171,12 @@ const char* query(const char*format,...)
                         switch(format[i]){
                                 case '%':ret[k++]='%';break;
                                 default:
+                                        if(querydebug>1)
+                                                log(LOG_DEBUG,"Query-Parm: %s",parms[j]);
                                         l=strlen(parms[j]);
                                         memcpy(ret+k,parms[j],l);
                                         k+=l;
+                                        j++;
                                         break;
                         }
                         pstat=0;
@@ -145,5 +191,56 @@ const char* query(const char*format,...)
                 if(parms[i])free(parms[i]);
         free(parms);
 
-        return ret;
+        if(querydebug)
+                log(LOG_DEBUG,"Query (%i): %s",cnt,ret);
+
+        res=PQexec(con,ret);
+        if(!res || (PQresultStatus(res)!=PGRES_TUPLES_OK && PQresultStatus(res)!=PGRES_COMMAND_OK)){
+                log(LOG_WARNING,"DB-Error: %s",PQerrorMessage(con));
+                if(res)PQclear(res);
+                return 0;
+        }
+        return res;
+}
+
+
+char*dbGetString(dbResult*r,int row,int col)
+{
+        return PQgetvalue(r,row,col);
+}
+
+char*dbGetStringByname(dbResult*r,int row,const char* col)
+{
+        return PQgetvalue(r,row,PQfnumber(r,col));
+}
+
+int dbGetFieldIndex(dbResult*r,const char*colname)
+{
+        return PQfnumber(r,colname);
+}
+
+int dbIsNull(dbResult*r,int row,int col)
+{
+        return PQgetisnull(r,row,col);
+}
+
+int dbIsNullByname(dbResult*r,int row,const char* col)
+{
+        return PQgetisnull(r,row,PQfnumber(r,col));
+}
+
+int dbGetInt(dbResult*r,int row,int col)
+{
+        return atoi(PQgetvalue(r,row,col));
+}
+
+int dbGetIntByname(dbResult*r,int row,const char* col)
+{
+        return atoi(PQgetvalue(r,row,PQfnumber(r,col)));
+}
+
+int dbAffectedRows(dbResult*r)
+{
+        if(!dbUpdateOK(r))return -1;
+        else return atoi(PQcmdTuples(r));
 }

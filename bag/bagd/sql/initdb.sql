@@ -28,7 +28,7 @@ SELECT lo_unlink(old.srvcert);
 CREATE TABLE vcsuser(
         usrname varchar(16) primary key,
         usrauthmethod smallint default 1,
-        usracl varchar(8) default 'r',
+        usracl varchar(8),
         usrpasswd char(32),
         usrcert oid
 );
@@ -43,7 +43,7 @@ CREATE TABLE vcsuser(
 # r - read any project/version/object/etc.
 # w - write access on any project/version/object/etc.
 # c - configure the server (read/write access on table options)
-# p - administrate projects
+# p - administrate projects/branches
 # u - administrate users
 
 CREATE RULE vcsuser_cert_d AS ON DELETE
@@ -177,29 +177,27 @@ CREATE TABLE projectacl(
 #ACL:
 # A - Admin
 # r - read
-# b - branch with username-prefix
-# B - branch without prefix
-# D -delete branches
+# b - branch with username-prefix (username-branchname)
+# B - branch without prefix (branchname=[A-Za-z0-9_]+)
+# d - delete branches
 
 CREATE TABLE branchacl(
         bausrname varchar(16) references vcsuser(usrname) not null,
         baprid int references project(prid) not null,
         babrid int references branch(brid) not null,
-        barights varchar(8),
+        barights varchar(16),
 
         primary key (bausrname,babrid,baprid)
 );
 #ACL:
-# A - Admin
-# W - all read/write ops (rwDamtT)
+# A - Admin (including removal of this branch)
+# W - everything but A
+# r - read
 # w - write (add versions)
-# B - delete this branch
 # d - delete versions
 # a - add objects
 # m - merge (set merge points)
-# t - tag
-# T - (re)move tags
-# r - read
+# t - tag/untag
 
 #on insert: check wheter this combination of branch and project is allowed:
 CREATE RULE branchacl_rule_prid_brid_i AS ON INSERT

@@ -19,6 +19,7 @@
 #include "bagssl.h"
 #include "log.h"
 
+#ifdef HAVE_GNUTLS
 #include <gnutls/gnutls.h>
 #include <gnutls/extra.h>
 
@@ -27,3 +28,12 @@ struct s_sockethandler *newsslhandler(int fd)
         close(fd);
         exit(1);
 }
+
+
+#else /*undef HAVE_GNUTLS*/
+struct s_sockethandler *newsslhandler(int fd)
+{
+        close(fd);
+        exit(1);
+}
+#endif /*HAVE_GNUTLS*/

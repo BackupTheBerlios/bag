@@ -21,14 +21,29 @@
 
 int tosyslog=0;
 
+static const char* getlevel(int level)
+{
+        switch(level)
+        {
+                case LOG_ERR:return "Error";break;
+                case LOG_WARNING:return "Warning";break;
+                case LOG_INFO:return "Info";break;
+                case LOG_DEBUG:return "Debug";break;
+                default:return "NoLevel";break;
+        }
+}
+
 void log(int level,const char*format,...)
 {
         va_list arg;
         va_start(arg,format);
+        char buf[1024];
+        vsnprintf(buf,sizeof(buf),format,arg);
+        buf[sizeof(buf)-1]=0;
         if(tosyslog){
-                char buf[1024];
-                vsnprintf(buf,sizeof(buf),format,arg);
                 syslog(level,"%s",buf);
-        }else vfprintf(stderr,format,arg);
+        }else{
+                fprintf(stderr,"%s: %s\n",getlevel(level),buf);
+        }
         va_end(arg);
 }

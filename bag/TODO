@@ -16,9 +16,10 @@ Bagd
   -ssl-cert
 *better logging (loglevels, configurable)
 *ssl
-*option redraw (see postgres backend: ./utils/misc/ps_status.c)
+*commandline argument redraw (see postgres backend: ./utils/misc/ps_status.c)
 *server specific logins
-
+*refacture location of E_*, AUTH_*, and ACL_* defines
+*port bagdinitdb to query.c
 
 Bag-Client
 -----------

@@ -72,7 +72,10 @@ Connection configuration/control
 packlevel <level>
  set a gzip packlevel (permissible: 0, g1-9, 0=off, 9=max)
 
- returns a list of allowed ziplevels (currently "0 g1 g2 g3 g4 g5 g6 g7 g8 g9)
+ if level is not given returns a list of allowed ziplevels in the blob
+ (currently only 0, g1 - g9 will follow later)
+
+ only blobs are packed
 
 quit
  No answer, just closed the stream.
@@ -80,8 +83,11 @@ quit
 Server configuration
 ----------------------
 
+All these commands require Server-Admin privilege
+
 config <key> [<value>]
  retrieve value for key, or set a new value
+ if no key is given all keys are returned in the blob
 
 
 getusers
@@ -89,28 +95,37 @@ getusers
 
 
 getuseracl <username>
- get ACL for this user
+ get ACL for this user, or the caller himself of no username was given
 
 
 setuseracl <username> <aclstring>
 
 
-createuser <username> <password> <aclstring>
+createuser <username> <password> [<aclstring>]
 
 dropuser <username>
 
 setpassword <username> <password>
+ if no password is given the blob of this command sets the SSL-certificate
+ the caller may set his own password (if not anonymous)
 
 disableuser <username>
- disables the login.
+
+enableuser <username>
 
 Meta info
 -----------
 
 getmeta projects|branches|tags|blessinglevels
 
-Projects
+Projects/Branches
 ----------
+
+projects
+ list all projects
+
+createproject <project> [<primary admins...>]
+ create a new project (optionally with initial admins)
 
 projectacl <project> <user> [<aclstring>]
  get/set acl of a user

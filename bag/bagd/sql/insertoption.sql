@@ -1,0 +1,1 @@
+insert into options (oval,okey) values('%s','%s:%s');

@@ -12,8 +12,6 @@ SQL comment (--) will not be detected, you must know whether your SQL-processor
 knows how to handle it if you move to anything else than PgSQL, but the code
 will break then anyway.
 
----Does PgSQL support "--" in remote commands?---
-
 Parameters have the format "$" plus one other character, which will be used to
 identify it (this differs much from JDBC!). This is done for the case the
 parameters are moved while optimizing certain statements.

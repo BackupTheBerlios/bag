@@ -1,5 +1,5 @@
 /***************************************************************************
-                          bagchild.c  -  description
+                          bagchild.c  -  bagd-childs mail loop/processing
                              -------------------
     begin                : Thu Oct 3 2002
     copyright            : (C) 2002 by Konrad Rosenbaum
@@ -19,26 +19,19 @@
 #include "bagchild.h"
 #include "bagd.h"
 #include "log.h"
-#include <libpq-fe.h>
+#include "defines.h"
+#include "query.h"
 
 #include <signal.h>
 #include <stdio.h>
 #include <string.h>
 
 
-#include "../config.h"
-
 #include "sql.h"
 
-PGconn *bc_con=0;
+dbConn *bc_con=0;
 struct s_sockethandler*bc_hdl=0;
 
-#define E_LINETOOLONG "-0 line too long\n"
-#define E_ILLEGALSEQUENCE "-0 illegal backlash sequence\n"
-#define E_BLOBLEN "-0 illegal value for blob length\n"
-#define E_NOBLOB "-0 this function expects no blob\n"
-#define E_READBLOB "-0 unable to read complete blob\n"
-#define E_NOCOMMAND "-0 no such command or command not allowed in current mode\n"
 
 int processline(struct s_linehandler*slh)
 {
@@ -134,10 +127,10 @@ int processline(struct s_linehandler*slh)
 
 static void bagdchildsighandler(int sig)
 {
-        log(LOG_WARNING,"Bagd child %i catched signal %i\n",getpid(),sig);
+        log(LOG_WARNING,"Bagd child %i catched signal %i",getpid(),sig);
         switch(sig){
                 case SIGPIPE:case SIGINT:case SIGTERM:case SIGQUIT:
-                        PQfinish(bc_con);
+                        dbClose(bc_con);
                         bc_hdl->sockcloser(bc_hdl);
                         exit(1);
                         break;
@@ -156,14 +149,14 @@ static void writehello()
           simple hostname*/
         char buf[1024],host[256];
         if(gethostname(host,255))strcpy(host,"(unknown)");
-        sprintf(buf,"+ " PACKAGE " " VERSION " on %s\n",host);
+        sprintf(buf,"+0 " PACKAGE " " VERSION " on %s\n",host);
         bc_hdl->sockwriter(bc_hdl,buf,strlen(buf));
 }
 
 static void protocollerror(struct s_sockethandler*hdl)
 {
-        hdl->sockwriter(hdl,"- Protocoll error\n",18);
-        PQfinish(bc_con);
+        hdl->sockwriter(hdl,E_PROTOCOL,strlen(E_PROTOCOL));
+        dbClose(bc_con);
         exit(1);
 }
 
@@ -172,7 +165,7 @@ void closechild()
         /*close connection*/
         bc_hdl->sockcloser(bc_hdl);
 
-        PQfinish(bc_con);
+        dbClose(bc_con);
 
         exit(0);
 }
@@ -180,7 +173,7 @@ void closechild()
 
 void bagchild(struct s_sockethandler*hdl,const char*dbstring)
 {
-        PGresult *res;
+        dbResult *res;
         struct sigaction sa;
         bc_hdl=hdl;
         
@@ -196,14 +189,13 @@ void bagchild(struct s_sockethandler*hdl,const char*dbstring)
         sigaction(SIGINT,&sa,0);
 
         /*open DB*/
-        bc_con=PQconnectdb(connectstring);
-        if(PQstatus(bc_con)==CONNECTION_BAD){
-                log(LOG_ERR,"DB Connection Error: %s\n",PQerrorMessage(bc_con));
-                PQfinish(bc_con);
+        bc_con=dbConnect(connectstring);
+        if(bc_con==0){
+                log(LOG_ERR,"DB Connection Error, exiting.");
                 exit(1);
         }
 
-        PQclear(PQexec(bc_con,SQL_INITSESSION));
+        dbFree(query(bc_con,SQL_INITSESSION));
 
 
         /*init connection*/

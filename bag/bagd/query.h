@@ -18,6 +18,21 @@
 #ifndef BAGD_QUERY_H
 #define BAGD_QUERY_H
 
+#include "../config.h"
+
+/*debug-level*/
+extern int querydebug;
+
+
+#ifdef HAVE_POSTGRES
+/*currently only postgres is supported:*/
+#include <libpq-fe.h>
+typedef PGresult dbResult;
+typedef PGconn dbConn;
+#else
+# error unable to compile DB support, no valid DB-System available
+#endif
+
 /** format a query
 
  format-string:
@@ -35,18 +50,23 @@
  call query(0) to just free the buffer
 
 */
-const char* query(const char*format,...);
+dbResult* query(dbConn*con,const char*format,...);
+dbConn*dbConnect(const char*constring);
+int dbUpdateOK(dbResult*);
+int dbSelectOK(dbResult*);
+void dbClose(dbConn*con);
+void dbFreeResult(dbResult*);
+void dbFree(dbResult*);
+int dbNumRows(dbResult*);
+char*dbGetString(dbResult*r,int row,int col);
+char*dbGetStringByname(dbResult*r,int row,const char* col);
+int dbGetFieldIndex(dbResult*r,const char*colname);
+int dbIsNull(dbResult*r,int row,int col);
+int dbIsNullByname(dbResult*r,int row,const char* col);
+int dbGetInt(dbResult*r,int row,int col);
+int dbGetIntByname(dbResult*r,int row,const char* col);
 
-
-#define AUTH_INTERN     1
-#define AUTH_PAM        2
-#define AUTH_SSL        4
-#define AUTH_ANON       0x4000
-#define AUTH_LOCKED     0x8000
-
-
-#define ACL_
-
+int dbAffectedRows(dbResult*);
 
 
 #endif /*BAGD_QUERY_H*/

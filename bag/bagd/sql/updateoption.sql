@@ -1,0 +1,1 @@
+update options set oval='%s' where okey='%s:%s';

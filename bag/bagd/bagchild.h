@@ -38,7 +38,7 @@ typedef void (*linehandler_t)(int argc,char**argv,int bloblen,void*blob);
 
 struct s_linehandler{
         const char*command;
-        int hasblob;
+        int hasblob;  /*0=does not take a blob, 1=blob is optional*/
         linehandler_t linehandler;
 };
 
@@ -52,7 +52,6 @@ extern struct s_sockethandler*bc_hdl;
 /*returns the number of the command executed or -1 in error*/
 int processline(struct s_linehandler*);
 
-#define E_ALLOCATION "-0 not enough memory to execute\n"
 
 
 /*close/destroy child process (does not return)*/
