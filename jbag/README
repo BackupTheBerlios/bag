@@ -1,0 +1,19 @@
+README for JBag
+================
+
+Interface to the Version Control System Bag written in Java2
+
+This program is protected under the GNU GPL version 2.
+
+
+
+Installation
+----------------
+
+Currently this only works on Unix/Linux with a decent make (GNU).
+
+You need JDK 1.2 or newer or compatible.
+You need the JDBC driver for PostgreSQL 7.x.
+
+Edit the configuration section of Makefile according to your needs and system.
+
