@@ -32,7 +32,22 @@ struct s_sockethandler{
         void*data;
 };
 
+typedef void (*linehandler_t)(int argc,char**argv,int bloblen,void*blob);
+
+struct s_linehandler{
+        const char*command;
+        int hasblob;
+        linehandler_t linehandler;
+};
+
 void bagchild(struct s_sockethandler*hdl,const char*dbstring);
 
+/*needs to be changed if we convert to threads instead processes
+ probably a macro requesting thread specific values*/
+extern PGconn *bc_con;
+extern struct s_sockethandler*bc_hdl;
+
+/*returns the number of the command executed or -1 in error*/
+int processline(struct s_linehandler*);
 
 #endif

@@ -6,24 +6,34 @@ General Format
 -----------------
 
 Client commands:
-<cmdid> <bloblength> <cmd> <parms...>\n
+<bloblength> <cmd> <parms...>\n
 <data of length bloblength>
 
- <cmdid> - unique number denoting the command
  <bloblength> - length of optional data
  <cmd> - command
+ <parms> - parameters
 
 Server answers/interrupts:
-<errcode> <cmdid> <bloblength> <answer>\n
+<errcode><bloblength> <answer>\n
 <data of length bloblength>
 
- <errcode> - success or failure code
- <cmdid> - command referenced by this answer
- <bloblength> - length of data
+ <errcode> - success or failure code ("+" or "-")
+ <bloblength> - length of data (if not sent: 0)
  <answer> - answer string or machine readable error info
  <data> - answer data (eg. patchfile) or error message
 
-
+strings which contain whitespaces may be concatenated with "..."
+any whitespace (also in "") is converted to one normal space
+strings which contain special characters may be quoted:
+\  - non-breaking space
+\t - tab
+\n - newline
+\r - linefeed
+\000 - octalcode of character (replace 000 by code)
+\x00 - hexcode of character (replace 00 by code)
+\\ - backslash
+\" - uninterpreted "
+ 
 VRL - Version Ressource Locator
 ---------------------------------
 
@@ -43,32 +53,6 @@ diff=<version>
  retrieve difference from version to the one referenced
 
 
-Error codes
----------------------
-
-Error codes have the format abc, where a is domain and b/c are defined within
-this domain.
-
-0       general/protocol
-
-00      internal
-000     no error
-001     unknown command
-002     access denied
-003     not found
-
-01      authentication
-010     authentication failed
-011     anonymous login not permitted
-018     no client certificate, but SSL-auth requested
-019     invalid client certificate or certificate does not fit to this username
-
-02      (protocol) config
-020     illegal gziplevel
-021     illegal config key or value not found
-
-03
-030
 
 Handshake commands
 --------------------
@@ -76,18 +60,12 @@ Handshake commands
 auth <username> <passwd>
  request login via password
 
- Error codes 010, 000.
-
  The server may close the connection after a certain amount of failed trials,
  depending on its configuration
 
- Possible SSL-extension: if passwd is left blank the server may authenticate
- against the SSL-certificate from the client. Error codes: 018, 019.
+ If passwd is left blank the server may authenticate against the
+ SSL-certificate from the client or make an anonymous login.
 
-anonymous
- request anonymous (read-only) login.
-
- Error codes: 000, 011.
 
 Connection configuration/control
 -----------------------------------
@@ -95,8 +73,7 @@ Connection configuration/control
 packlevel <level>
  set a gzip packlevel (permissible: 0, g1-9, 0=off, 9=max)
 
- Error codes: 000, 020.
- 020 adds a list of allowed ziplevels (currently "0 g1 g2 g3 g4 g5 g6 g7 g8 g9)
+ returns a list of allowed ziplevels (currently "0 g1 g2 g3 g4 g5 g6 g7 g8 g9)
 
 quit
  No answer, just closed the stream.
@@ -107,21 +84,17 @@ Server configuration
 config <key> [<value>]
  retrieve value for key, or set a new value
 
- Error codes: 000, 021, 002.
 
 getusers
  get all usernames
 
- Error codes: 000, 002.
 
 getuseracl <username>
  get ACL for this user
 
- Error codes: 000, 002, 003.
 
 setuseracl <username> <aclstring>
 
- Error codes: 000, 002, 003.
 
 createuser <username> <password> <aclstring>
 
@@ -130,7 +103,7 @@ dropuser <username>
 setpassword <username> <password>
 
 disableuser <username>
- deletes the password of this user, thus disables him/her to log in.
+ disables the login.
 
 Meta info
 -----------
@@ -184,3 +157,37 @@ gettags <VRL>
 getmergepoints <VRL>
 
 setmergepoint <VRL> <VRL>
+
+
+Watching
+----------
+
+watchmode
+ switches this connection to the watch mode:
+
+ In watchmode the client sends updates, which objects/projects/etc to watch.
+ The server simply sends updates what has been changed/added/deleted.
+
+ Client commands:
+ normalmode
+   Interrupt watchmode: go to normal mode but keep watching and collecting.
+   
+ quitwatch
+   Quit watchmode: go to normal mode and delete all watchpoints.
+
+ add <type>:<object>
+   make this object watched, type is one of "object", "project", "branch", ..?
+
+ del <type>:<object>
+   remove this object from the watchlist
+
+ Server answers:
+
+ ~<type>:<object>
+  changed
+ +<type>:<object>
+  added
+ -<type>:<object>
+  removed
+ .
+  exited watchmode

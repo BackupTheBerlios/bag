@@ -1,7 +1,9 @@
 bin_PROGRAMS = bagdinitdb bagd
 
 bagdinitdb_SOURCES = bagdinitdb.c
-bagd_SOURCES = bagd.c bagchild.c bagstream.c bagssl.c
+bagd_SOURCES = bagd.c bagchild.c bagstream.c bagssl.c bc_auth.c log.c md5.c query.c
+bagd_LDFLAGS = @LIBGNUTLS_LIBS@
+bagd_CFLAGS  = @LIBGNUTLS_CFLAGS@
 
 bagdinitdb.c bagd.c: sql.h
 

@@ -1,8 +1,8 @@
-# Configuration for BogoTron
+# Configuration for BaG
 # this program is free software and protected by the GNU GPL version 2 or
 # (at your option) any newer, see file COPYING for details
 #
-# (c) Konrad Rosebaum, 2001
+# (c) Konrad Rosebaum, 2002
 
 
 dnl Process this file with autoconf to produce a configure script.
@@ -10,7 +10,7 @@ AC_INIT(bagd/bagdinitdb.c)
 AM_CONFIG_HEADER(config.h)
 
 
-AM_INIT_AUTOMAKE(Bag,0.1)
+AM_INIT_AUTOMAKE(bag,0.1.0)
 AC_DEFINE_UNQUOTED(PACKAGE, "$PACKAGE")
 AC_DEFINE_UNQUOTED(VERSION, "$VERSION")
 
@@ -24,6 +24,12 @@ AC_PROG_LIBTOOL
 
 dnl Checks for libraries.
 
+AM_PATH_LIBGNUTLS( 0.4.2,, AC_MSG_ERROR([[
+***
+*** libgnutls was not found. You may want to get it from
+*** ftp://ftp.gnutls.org/pub/gnutls/
+]]))
+
 dnl Checks for header files.
 
 
@@ -34,5 +40,10 @@ dnl Check for Optional libs
 dnl Checks for library functions.
 
 
-AC_OUTPUT(./Makefile libbag/Makefile bagd/Makefile bag/Makefile doc/Makefile diff/Makefile bagd/sql/Makefile )
+dnl Postgres, there is probably a much better way:
+CFLAGS="$CFLAGS -I/usr/include/postgresql"
+LDFLAGS="$LDFLAGS -lpq -lssl"
+
+
+AC_OUTPUT(./Makefile libbag/Makefile bagd/Makefile bag/Makefile doc/Makefile diff/Makefile bagd/sql/Makefile Makefile )
 

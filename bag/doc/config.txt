@@ -1,0 +1,51 @@
+Configuring BagD
+====================
+
+The Bagd config is stored in the table options. The only thing the server gets
+when it starts is the connection string to the database containing the options
+and the repository.
+
+You call the server:
+bagd "connstring" [-d]
+where -d means "debug" (ie. the server does not go to background);
+connstring contains options for PostgreSQL (see PSQL docu for details), the
+most important are:
+hostaddr=<host to connect to (localhost)>
+port=<port of the db (5432)>
+dbname=<name of the repository DB>
+user=<user to use for connection>
+password=<if required: password of that user>
+
+Options are hierarchical, colon (":") separated. A typical option key could
+look like: "socket:1", where "socket" is the facility to configure and "1"
+the iteration (for options which may be repeated multiple times).
+
+Planned for later:
+several servers at the same DB could be separated by prepending options with
+a prefix like ":instance:", eg. Server 1 would have the socket option
+":s1:socket:0", while server 2 would have ":s2:socket:0".
+THIS IS YET NOT SUPPORTED.
+
+Current options
+----------------
+
+socket:<iter>
+  one for each listening socket of this server. Valid formats for the value
+  are:
+
+  tcp:<port>
+  tcp6:<port>
+    TCP/TCPv6 socket, please note that TCPv6 sockets listen to TCPv4
+    connections also (if you want both you only need to initialize TCPv6)
+  
+  ssl:<port>
+  ssl6:<port>
+    SSL over TCP/TCPv6 socket
+
+  unix:</path>
+  local:</path>
+    AF_UNIX socket on /path
+
+  sunix:</path>
+  slocal:</path>
+    SSL over AF_UNIX socket (could anybody possibly be that paranoide?)
