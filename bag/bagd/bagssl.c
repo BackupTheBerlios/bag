@@ -15,7 +15,12 @@
  *                                                                         *
  ***************************************************************************/
 
+#include "../config.h"
 #include "bagssl.h"
+#include "log.h"
+
+#include <gnutls/gnutls.h>
+#include <gnutls/extra.h>
 
 struct s_sockethandler *newsslhandler(int fd)
 {

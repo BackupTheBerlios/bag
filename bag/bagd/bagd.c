@@ -19,6 +19,7 @@
 #include <libpq-fe.h>
 #include "sql.h"
 #include "log.h"
+#include "query.h"
 
 #include <stdarg.h>
 #include <stdlib.h>
@@ -27,8 +28,11 @@
 #include <signal.h>
 #include <errno.h>
 #include <getopt.h>
+#include <stdio.h>
+#include <fcntl.h>
 
 #include <sys/types.h>
+#include <sys/stat.h>
 #include <sys/wait.h>
 #include <sys/socket.h>
 #include <sys/un.h>
@@ -37,20 +41,33 @@
 #include <arpa/inet.h>
 #include <netdb.h>
 
+#define _GNU_SOURCE
+#include <getopt.h>
+
 #include "bagstream.h"
 #include "bagssl.h"
 
 #include "bagd.h"
 
-char *connectstring;
+/*database configuration*/
+char *connectstring=0;
+char *servername="";
 
+/* nsockets = number of listening sockets
+ * sockets = array of socket fd's
+ * isssl = bool array: is the corresponding socket listening for SSL connections
+ * socketpaths = path to all AF_LOCAL sockets
+ *
+ * nchildren = number of currently active children
+ * children = PID of all running child processes
+ */
 static int nsockets=0,*sockets=0,*isssl=0,nchildren=0;
 static char **socketpaths=0;
 static pid_t *children;
 
 
 
-
+/*close all sockets, does not delete paths, since also called when a child is spawned*/
 static void closeall()
 {
         int i;
@@ -58,6 +75,7 @@ static void closeall()
                 close(sockets[i]);
 }
 
+/*remove complete configuration*/
 static void deconfig()
 {
         int i;
@@ -76,6 +94,7 @@ static void deconfig()
         socketpaths=0;
 }
 
+/*load configuration from the server, currently only sockets are supported*/
 static void config()
 {
         PGconn *con;
@@ -89,7 +108,7 @@ static void config()
                 exit(1);
         }
 
-        res=PQexec(con,SQL_GETOPTIONS);
+        res=PQexec(con,query(SQL_GETOPTIONS,servername));
         if(!res || PQresultStatus(res) != PGRES_TUPLES_OK){
                 log(LOG_ERR,"Unable to get configuration: %s\n",PQerrorMessage(con));
                 if(res)PQclear(res);
@@ -218,6 +237,7 @@ static void config()
         PQfinish(con);
 }
 
+/*add a child process to the list*/
 void addchild(pid_t pid)
 {
         int i;
@@ -239,6 +259,7 @@ void addchild(pid_t pid)
                 children[i]=0;
 }
 
+/*delete a child process from the list*/
 void delchild(pid_t pid)
 {
         int i;
@@ -247,6 +268,7 @@ void delchild(pid_t pid)
                         children[i]=0;
 }
 
+/*standard signal handler*/
 static void bagdsighandler(int sig)
 {
         switch(sig){
@@ -278,7 +300,7 @@ static void bagdsighandler(int sig)
         }
 }
 
-
+/*create a child process to handle a connection*/
 static void spawnchild(int fd,int usessl,char*argv1)
 {
         pid_t pid;
@@ -307,6 +329,7 @@ static void spawnchild(int fd,int usessl,char*argv1)
         }
 }
 
+/*go to daemon mode*/
 void daemonize()
 {
         close(0);close(1);close(2);
@@ -315,28 +338,110 @@ void daemonize()
         chdir("/");
 }
 
+/*output help text*/
+#define HELP "\
+\tOptions:\n\
+\t\t-f --file <filename>\n\
+\t\t\tread connection string from file\n\n\
+\t\t-h --help\n\
+\t\t\toutput this help text and exit\n\n\
+\t\t-v --version\n\
+\t\t\toutput version number and exit\n\n\
+\t\t-d --debug\n\
+\t\t\tdon't go into daemon mode\n\n\
+\t\t-n --name --servername <name>\n\
+\t\t\tset the servername, used to distinguish configuration\n\
+\t\t\tof different servers on the same database\n\n\
+\tConnection Parameters:\n\
+\t\tdbname=name of the database\n\
+\t\thostaddr=host to connect to (default: localhost)\n\
+\t\tport=port to connect to (default: 5432)\n\
+\t\tuser=DB-user to use for connection\n\
+\t\tpassword=DB-Password\n"
+static void help(const char*name)
+{
+        fprintf(stderr, PACKAGE " version " VERSION "\nUsage: %s [options] [DB-connection string]\n" HELP,name);
+}
+
+/*parse commandline*/
+static int godaemon=1;
+static char sopt[]="hvf:dn:";
+static struct option lopt[]={
+        {"help",0,0,'h'},
+        {"version",0,0,'v'},
+        {"file",1,0,'f'},
+        {"debug",0,0,'d'},
+        {"servername",1,0,'n'},
+        {"name",1,0,'n'},
+        {0,0,0,0}
+};
+static void handleoptions(int argc,char**argv)
+{
+        int c,l=0,fd;
+        char*argv0=argv[0],*file=0;
+        while(1){
+                c=getopt_long(argc,argv,sopt,lopt,0);
+                if(c<0)break;
+
+                switch(c){
+                        case 'v':
+                        case 'h':help(argv0);exit(0);break;
+
+                        case 'd':godaemon=0;break;
+                        
+                        case 'f':file=optarg;break;
+
+                        case 'n':servername=optarg;break;
+
+                        default:help(argv0);exit(1);break;
+                }
+        }
+        c=optind;
+        while(c<argc)l+=strlen(argv[c++])+1;
+        if(file){
+                fd=open(file,O_RDONLY);
+                if(fd<0){
+                        log(LOG_ERR,"Error opening file %s: %s\n",file,strerror(errno));
+                        exit(1);
+                }
+                c=lseek(fd,0,SEEK_END);
+                if(c>=0){
+                        lseek(fd,0,SEEK_SET);
+                }else{
+                        log(LOG_ERR,"Error trying to get file length %s: %s\n",file,strerror(errno));
+                        exit(1);
+                }
+        }
+        connectstring=malloc(l);
+        if(connectstring==0){
+                log(LOG_ERR,"Cannot allocate enough memory for DB connection string.\n");
+                exit(1);
+        }
+        if(file){
+                read(fd,connectstring,c);
+                connectstring[c]=0;
+        }else *connectstring=0;
+        while(optind<argc){
+                if(*connectstring)strcat(connectstring," ");
+                strcat(connectstring,argv[optind++]);
+        }
+}
+
 void main(int argc,char**argv)
 {
         int i,l;
         struct sigaction sa;
-        if(argc<2||argc>3){
-                fprintf(stderr,"Usage: %s \"connection string\" [-d]\n",argv[0]);
+        if(argc<2){
+                help(argv[0]);
                 exit(1);
         }
-        if(argc==3 && strcmp(argv[2],"-d")){
-                log(LOG_ERR,"expecting -d as 2nd parameter.\n");
-                exit(1);
-        }
-        if(strlen(argv[1])<8){
-                log(LOG_ERR,"DB connection string must at least contain dbname=...\n");
-                exit(1);
-        }
-        connectstring=malloc((l=strlen(argv[1]))+1);
-        strcpy(connectstring,argv[1]);
-        /*hide connection string, it probably contains a password*/
-        for(i=0;i<l;i++)argv[1][i]=0;
-        strcpy(argv[1],"parent");/*there is enough space, since dbname= is mandatory*/
 
+        handleoptions(argc,argv);
+        if(connectstring==0){
+                help(argv[0]);
+                exit(1);
+        }
+        
         /*init signals*/
         sa.sa_sigaction=0;
         sa.sa_handler=bagdsighandler;
@@ -352,7 +457,7 @@ void main(int argc,char**argv)
         config();
 
         /*finally daemonize*/
-        if(argc<3)daemonize();
+        if(godaemon)daemonize();
         
         /*main loop*/
         for(;;){

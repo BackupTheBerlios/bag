@@ -3,5 +3,6 @@
 
 grant select,insert,update,delete
 on blessinglevel,branch,branchacl,mergepoint,objectversion,options,
-   project,projectacl,projectbranch,server,tag,tagversion,vcsuser,vobject
+   project,projectacl,projectbranch,server,tag,tagversion,vcsuser,vobject,
+   servercert
    to %s;

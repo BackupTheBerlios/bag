@@ -17,14 +17,10 @@ user=<user to use for connection>
 password=<if required: password of that user>
 
 Options are hierarchical, colon (":") separated. A typical option key could
-look like: "socket:1", where "socket" is the facility to configure and "1"
-the iteration (for options which may be repeated multiple times).
+look like: "srv:socket:1", where "socket" is the facility to configure and "1"
+the iteration (for options which may be repeated multiple times). "srv" denotes
+one of possibly several servers on the same database (default is "").
 
-Planned for later:
-several servers at the same DB could be separated by prepending options with
-a prefix like ":instance:", eg. Server 1 would have the socket option
-":s1:socket:0", while server 2 would have ":s2:socket:0".
-THIS IS YET NOT SUPPORTED.
 
 Current options
 ----------------

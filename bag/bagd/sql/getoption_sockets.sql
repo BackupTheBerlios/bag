@@ -1,1 +1,1 @@
-SELECT oval FROM options WHERE okey LIKE 'socket:%';
+SELECT oval FROM options WHERE okey LIKE '%s:socket:%%';

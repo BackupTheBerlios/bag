@@ -16,3 +16,4 @@
  ***************************************************************************/
 
 extern char*connectstring;
+extern char*servername;

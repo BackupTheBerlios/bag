@@ -10,6 +10,20 @@ CREATE TABLE options(
         oval varchar(64)
 );
 
+CREATE TABLE servercert(
+        srvname varchar(32) primary key,
+        srvcert oid not null
+);
+
+CREATE RULE servercert_d AS ON DELETE
+TO servercert WHERE old.srvcert <> NULL DO
+SELECT lo_unlink(old.srvcert);
+
+CREATE RULE servercert_u AS ON UPDATE
+TO servercert WHERE old.srvcert != new.srvcert DO
+SELECT lo_unlink(old.srvcert);
+
+
 #Users:
 CREATE TABLE vcsuser(
         usrname varchar(16) primary key,

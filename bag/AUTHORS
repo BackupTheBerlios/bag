@@ -10,3 +10,18 @@ Authors
 Konrad Rosenbaum <konrad.rosenbaum@gmx.net>
  *initial design, bagd, DB
  
+
+Extra-Credits
+==============
+
+MD5-Module (bagd/md5.[ch]
+ Written by Ulrich Drepper <drepper@gnu.ai.mit.edu>, 1995.
+
+PostgreSQL
+ by the PostgreSQL team (http://www.postgresql.org)
+
+GNU-TLS (incl. Autoconf modules)
+ GNU TLS team (http://www.gnupg.org/gnutls)
+
+Autoconf/Automake/Libtool
+ FSF (too many contributors to list here, see info pages)

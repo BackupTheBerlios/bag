@@ -1,1 +1,1 @@
-SELECT okey,oval FROM options;
+SELECT okey,oval FROM options WHERE okey LIKE '%s:%%';
