@@ -28,6 +28,9 @@
 
 #include "sql.h"
 
+#define GRANT_SELECT "select"
+#define GRANT_ALL "select,insert,update,delete"
+
 #define HELP "Usage: %s [-hvVspduwoiUPaA] \\\n\
         [--server ...] [--port ...] \\\n\
         [--dbname ...] [--user ...] [--passwd [...]] [--options ...] \\\n\
@@ -180,8 +183,8 @@ int main(int argc,char**argv)
                 printf("Creating DB\n");
 
         /*misusing ipwd2buf a little bit...*/
-        sprintf(ipwd2buf,"createdb -h %s -p %s -U %s %s %s",
-                server,port,user,passwd?"-W":"",passwd?passwd:"");
+        sprintf(ipwd2buf,"createdb -h %s -p %s -U %s %s %s %s",
+                server,port,user,passwd?"-W":"",passwd?passwd:"",dbname);
         if(opt=system(ipwd2buf)){
                 fprintf(stderr,"Error creating Database: %s\n",
                         opt==-1?"Unable to call createdb.":"Bad return code from createdb.");
@@ -227,6 +230,21 @@ int main(int argc,char**argv)
 
         if(verbose)
                 printf("Creating initial user\n");
+
+        sprintf(ipwd2buf,"createuser -h %s -p %s -U %s %s %s %s",
+                server,port,user,passwd?"-W":"",passwd?passwd:"",inituser);
+        if(opt=system(ipwd2buf)){
+                fprintf(stderr,"Warning creating User: %s\n",
+                        opt==-1?"Unable to call createuser.":"Bad return code from createuser.");
+        }
+        
+        res=PQexec(con,query(SQL_GRANT,GRANT_ALL,inituser));
+        if(!res || PQresultStatus(res) != PGRES_COMMAND_OK){
+                fprintf(stderr,"Unable to grant privileges to initial user %s: %s\n"
+                        inituser,PQerrorMessage(con));
+                if(res)PQclear(re);
+                exitdb(con);
+        }
 
         
 }

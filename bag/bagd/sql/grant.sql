@@ -1,7 +1,7 @@
 # Grant these to a DB-user
-# Parameter: username
+# Parameter: privileges,username
 
-grant select,insert,update,delete
+grant %s
 on blessinglevel,branch,branchacl,mergepoint,objectversion,options,
    project,projectacl,projectbranch,server,tag,tagversion,vcsuser,vobject,
    servercert
