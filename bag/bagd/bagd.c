@@ -39,7 +39,9 @@
 #include "bagstream.h"
 #include "bagssl.h"
 
-static char *connectstring;
+#include "bagd.h"
+
+char *connectstring;
 
 static int nsockets=0,*sockets=0,*isssl=0,nchildren=0;
 static char **socketpaths=0;
@@ -264,6 +266,8 @@ static void bagdsighandler(int sig)
                         pid=waitpid(-1,&stat,WNOHANG|WUNTRACED);
                         if(pid>0 && (WIFEXITED(stat) || WIFSIGNALED(stat)))
                                 delchild(pid);
+
+                        log(LOG_DEBUG,"SIGCHLD: pid=%i status=%i\n",(int)pid,stat);
                         break;
                 }
                 default:
@@ -274,7 +278,7 @@ static void bagdsighandler(int sig)
 }
 
 
-static void spawnchild(int fd,int usessl)
+static void spawnchild(int fd,int usessl,char*argv1)
 {
         pid_t pid;
         pid=fork();
@@ -291,6 +295,7 @@ static void spawnchild(int fd,int usessl)
                 /*close all server sockets (to enable clients to run on,
                   while the server reconfigures)*/
                 closeall();
+                strcpy(argv1,"child ");
                 /*switch to child mode*/
                 bagchild(sh,connectstring);
                 exit(0);
@@ -380,8 +385,7 @@ void main(int argc,char**argv)
                                         log(LOG_ERR,"Internal error on accept(%i,0,0): %s, exiting.\n",fd,strerror(e));
                                         exit(1);
                                 }
-                                strcpy(argv[1],"child ");
-                                spawnchild(fd,isssl[i]);
+                                spawnchild(fd,isssl[i],argv[1]);
                         }
 
         }

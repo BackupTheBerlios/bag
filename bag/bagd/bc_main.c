@@ -1,7 +1,7 @@
 /***************************************************************************
-                          bc_auth.h  -  description
+                          bc_main.c  -  description
                              -------------------
-    begin                : Fri Oct 4 2002
+    begin                : Wed Oct 16 2002
     copyright            : (C) 2002 by Konrad Rosenbaum
     email                : konrad.rosenbaum@gmx.net
  ***************************************************************************/
@@ -15,6 +15,14 @@
  *                                                                         *
  ***************************************************************************/
 
-extern char*username;
+#include "bc_main.h"
 
-int authenticate();
+#include "../config.h"
+#include "log.h"
+#include "bagchild.h"
+#include "bc_auth.h"
+
+void mainmode()
+{
+        log(LOG_DEBUG,"reached main mode...\n");
+}

@@ -32,6 +32,8 @@
  %o - OID
  %% - single % sign
 
+ call query(0) to just free the buffer
+
 */
 const char* query(const char*format,...);
 

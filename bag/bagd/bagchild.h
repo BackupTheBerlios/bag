@@ -18,6 +18,8 @@
 #ifndef BAGCHILD_H
 #define BAGCHILD_H
 
+#include <libpq-fe.h>
+
 struct s_sockethandler;
 
 typedef int (*sockhandler_t)(struct s_sockethandler*,void*buf,int len);
@@ -49,5 +51,8 @@ extern struct s_sockethandler*bc_hdl;
 
 /*returns the number of the command executed or -1 in error*/
 int processline(struct s_linehandler*);
+
+#define E_ALLOCATION "-0 not enough memory to execute\n"
+
 
 #endif
