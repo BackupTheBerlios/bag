@@ -167,6 +167,16 @@ static void protocollerror(struct s_sockethandler*hdl)
         exit(1);
 }
 
+void closechild()
+{
+        /*close connection*/
+        bc_hdl->sockcloser(bc_hdl);
+
+        PQfinish(bc_con);
+
+        exit(0);
+}
+
 
 void bagchild(struct s_sockethandler*hdl,const char*dbstring)
 {
@@ -205,9 +215,7 @@ void bagchild(struct s_sockethandler*hdl,const char*dbstring)
         }
         
 
-        /*close connection*/
-        hdl->sockcloser(bc_hdl);
-        
-        PQfinish(bc_con);
-        return; /*return to spawnchild and exit there*/
+        /*finish child process*/
+        closechild();
+        return; /*return to spawnchild and exit there in case of error (unlikely)*/
 }

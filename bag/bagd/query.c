@@ -116,7 +116,7 @@ const char* query(const char*format,...)
                                         return 0;
                                 
                         }
-                }
+                }else if(format[i]=='%')pstat=1;
         
         
         /*stage 3 - fill query*/

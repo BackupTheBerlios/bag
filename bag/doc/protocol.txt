@@ -22,9 +22,8 @@ Server answers/interrupts:
  <answer> - answer string or machine readable error info
  <data> - answer data (eg. patchfile) or error message
 
-strings which contain whitespaces may be concatenated with "..."
-any whitespace (also in "") is converted to one normal space
-strings which contain special characters may be quoted:
+Any space character divides arguments. Use "\ " for normal spaces.
+Strings which contain special characters may be quoted:
 \  - non-breaking space
 \t - tab
 \n - newline

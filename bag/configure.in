@@ -42,7 +42,7 @@ dnl Checks for library functions.
 
 dnl Postgres, there is probably a much better way:
 CFLAGS="$CFLAGS -I/usr/include/postgresql"
-LDFLAGS="$LDFLAGS -lpq -lssl"
+LDFLAGS="$LDFLAGS -lpq -lssl -lpam"
 
 
 AC_OUTPUT(./Makefile libbag/Makefile bagd/Makefile bag/Makefile doc/Makefile diff/Makefile bagd/sql/Makefile Makefile )

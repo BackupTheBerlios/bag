@@ -1,0 +1,41 @@
+TODO List of Bag
+==================
+
+
+Configuration
+---------------
+
+*detect Postgres and set parameters
+*detect GNU-TLS (explicit --with-tls)
+*check for more needed features, insert config.h in all sourcefiles
+
+Bagd
+------
+
+*protocol implementation
+ -auth
+  -passwd
+  -anon
+  -ssl-cert
+  -remove dummy
+*better logging (loglevels, configurable)
+*ssl
+*getopt
+*better option redraw (see postgres backend: ./utils/misc/ps_status.c)
+*server specific db-side-config
+*server specific logins
+
+
+Bag-Client
+-----------
+
+*well, write it
+
+
+Protocol-changers
+-------------------
+
+*HTTP, HTTPS (to hop over proxies)
+*Proxy/SOCKS (if the proxy allows CONNECT to non 443-ports, if we have SOCKS)
+*SMTP - does this make any sense at all?
+

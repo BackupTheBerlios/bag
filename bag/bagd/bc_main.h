@@ -16,3 +16,6 @@
  ***************************************************************************/
 
 void mainmode();
+
+/*convenience: quit-handler for other modules*/
+void quit_handler(int argc,char**argv,int bloblen,void*blob);

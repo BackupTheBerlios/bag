@@ -24,7 +24,7 @@ struct s_sockethandler;
 
 typedef int (*sockhandler_t)(struct s_sockethandler*,void*buf,int len);
 typedef void (*sockcloser_t)(struct s_sockethandler*);
-typedef int (*sockauth_t)(struct s_sockethandler*);
+typedef int (*sockauth_t)(struct s_sockethandler*,char*cert);
 
 struct s_sockethandler{
         sockhandler_t sockreader,sockwriter;
@@ -53,6 +53,11 @@ extern struct s_sockethandler*bc_hdl;
 int processline(struct s_linehandler*);
 
 #define E_ALLOCATION "-0 not enough memory to execute\n"
+
+
+/*close/destroy child process (does not return)*/
+
+void closechild();
 
 
 #endif

@@ -1,7 +1,7 @@
 /***************************************************************************
-                          bc_main.c  -  description
+                          misc.c  -  description
                              -------------------
-    begin                : Wed Oct 16 2002
+    begin                : Thu Oct 24 2002
     copyright            : (C) 2002 by Konrad Rosenbaum
     email                : konrad.rosenbaum@gmx.net
  ***************************************************************************/
@@ -15,45 +15,21 @@
  *                                                                         *
  ***************************************************************************/
 
-#include "bc_main.h"
-
-#include "../config.h"
-#include "log.h"
-#include "bagchild.h"
-#include "bc_auth.h"
-
-#include <stdio.h>
-#include <string.h>
-
-static void hello_handler(int argc,char**argv,int bloblen,void*blob)
+#include <libpq-fe.h>
+#include <sys/types.h>
+#include "misc.h"
+ 
+void md5_hex_buffer (const char *buffer, size_t len, char*resblock)
 {
-        char buf[32];
-        sprintf(buf,"+%i hello.\n",bloblen);
-        bc_hdl->sockwriter(bc_hdl,buf,strlen(buf));
-        bc_hdl->sockwriter(bc_hdl,blob,bloblen);
-}
-
-static int doquit=0;
-
-void quit_handler(int argc,char**argv,int bloblen,void*blob)
-{
-        bc_hdl->sockwriter(bc_hdl,"+0 quitting\n",12);
-        closechild();
-}
-
-
-
-static struct s_linehandler mainlinehandler[]={
-        {"hello",1,hello_handler},
-        {"quit",0,quit_handler},
-        {0,0,0}
-};
-
-
-void mainmode()
-{
-        log(LOG_DEBUG,"reached main mode...\n");
-        while(!doquit){
-                processline(mainlinehandler);
+        unsigned char buf[16];
+        char hex[]="0123456789abcdef";
+        int i;
+        md5_buffer(buffer,len,buf);
+        for(i=0;i<16;i++){
+                resblock[i*2]=hex[(buf[i]>>4)&0xf];
+                resblock[i*2+1]=hex[buf[i]&0xf];
         }
+        resblock[32]=0;
 }
+
+

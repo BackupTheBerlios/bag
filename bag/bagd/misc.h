@@ -1,7 +1,7 @@
 /***************************************************************************
-                          bc_auth.h  -  description
+                          misc.h  -  description
                              -------------------
-    begin                : Fri Oct 4 2002
+    begin                : Thu Oct 24 2002
     copyright            : (C) 2002 by Konrad Rosenbaum
     email                : konrad.rosenbaum@gmx.net
  ***************************************************************************/
@@ -15,8 +15,5 @@
  *                                                                         *
  ***************************************************************************/
 
-extern char*username;
-
-int authenticate();
-
+extern void md5_hex_buffer (const char *buffer, size_t len, char *resblock);
 
