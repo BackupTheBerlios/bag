@@ -146,7 +146,7 @@ static void bagdchildsighandler(int sig)
 static void writehello()
 {
         /*FIXME: some way is needed to extract the FQDN instead of the
-          simple hostname*/
+          simple hostname, maybe better set it as option in the DB, table options*/
         char buf[1024],host[256];
         if(gethostname(host,255))strcpy(host,"(unknown)");
         sprintf(buf,"+0 " PACKAGE " " VERSION " on %s\n",host);

@@ -26,6 +26,7 @@
 #define E_SYNTAX "-0 Syntactical error.\n"
 #define E_PERM "-0 Insufficient Karma.\n"
 #define E_DATABASE "-0 Internal Database Error, please contact the server admin.\n"
+#define E_NOUSER "-0 No such user.\n"
 
 #define E_UNIMPL "-0 Yet not implemented. Sorry. :-(\n"
 

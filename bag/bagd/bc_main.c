@@ -72,6 +72,7 @@ static struct s_linehandler mainlinehandler[]={
         /*bc_user*/
         {"config",0,config_handler},
         {"getusers",0,getusers_handler},
+        {"getuseracl",0,getuseracl_handler},
         /*EOL*/
         {0,0,0}
 };

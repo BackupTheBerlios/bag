@@ -1,5 +1,5 @@
 if HAVE_POSTGRES
-bin_PROGRAMS = bagdinitdb bagd
+bin_PROGRAMS = bagdinitdb bagd bagdvhost
 endif
 
 bagdinitdb_SOURCES = bagdinitdb.c query.c
@@ -7,9 +7,14 @@ bagd_SOURCES = bagd.c bagchild.c bagstream.c bagssl.c bc_main.c bc_auth.c bc_use
 bagd_LDFLAGS = @LIBGNUTLS_LIBS@ @POSTGRES_LDFLAGS@ @PAM_LDFLAGS@
 bagd_CFLAGS  = @LIBGNUTLS_CFLAGS@ @POSTGRES_CFLAGS@ -I../libbag/
 bagd_LDADD   = ../libbag/libbag.la
+
 bagdinitdb_LDFLAGS = @POSTGRES_LDFLAGS@
 bagdinitdb_CFLAGS  = @POSTGRES_CFLAGS@ -I../libbag/
 bagdinitdb_LDADD   = ../libbag/libbag.la
+
+bagdvhost_SOURCES  = vhost.c
+bagdvhost_CFLAGS   = -I../libbag/
+bagdvhost_LDADD    = ../libbag/libbag.la
 
 CLEANFILES = sql.h sql_*.h
 

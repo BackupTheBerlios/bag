@@ -147,7 +147,56 @@ void getusers_handler(int argc,char**argv,int bloblen,void*blob)
         dynbuf_free(buf);
 }
 
-void getuseracl_handler(int argc,char**argv,int bloblen,void*blob);
+void getuseracl_handler(int argc,char**argv,int bloblen,void*blob)
+{
+        dbResult*res;
+        char*acl;
+        struct dynbuf_s*buf;
+        if(!checkGlobalACL(ACL_ADMUSER)){
+                bc_hdl->sockwriter(bc_hdl,E_PERM,strlen(E_PERM));
+                return;
+        }
+        /*invalid argc*/
+        if(argc!=2){
+                bc_hdl->sockwriter(bc_hdl,E_SYNTAX,strlen(E_SYNTAX));
+                return;
+        }
+        res=query(bc_con,SQL_GETMAINACL,argv[1]);
+        if(!res){
+                bc_hdl->sockwriter(bc_hdl,E_DATABASE,strlen(E_DATABASE));
+                return;
+        }
+        if(dbNumRows(res)!=1){
+                bc_hdl->sockwriter(bc_hdl,E_NOUSER,strlen(E_NOUSER));
+                dbFree(res);
+                return;
+        }
+        buf=dynbuf_new();
+        if(!buf){
+                bc_hdl->sockwriter(bc_hdl,E_ALLOCATION,strlen(E_ALLOCATION));
+                dbFree(res);
+                return;
+        }
+        acl=dbGetString(res,0,0);
+        if(!acl)acl="";
+
+        if(strchr(acl,ACL_ADMIN))dynbuf_addstr(buf," admin");
+        if(strchr(acl,ACL_READ))dynbuf_addstr(buf," read");
+        if(strchr(acl,ACL_WRITE))dynbuf_addstr(buf," write");
+        if(strchr(acl,ACL_CONFIG))dynbuf_addstr(buf," config");
+        if(strchr(acl,ACL_ADMUSER))dynbuf_addstr(buf," crateUsers");
+        if(strchr(acl,ACL_ADMPROJECT))dynbuf_addstr(buf,"createProjects");
+
+        dbFree(res);
+
+        dynbuf_addstr(buf,"\n");
+
+        bc_hdl->sockwriter(bc_hdl,"+0",2);
+        bc_hdl->sockwriter(bc_hdl,buf->buffer,buf->len);
+        dynbuf_free(buf);
+}
+
+
 void setuseracl_handler(int argc,char**argv,int bloblen,void*blob);
 void createuser_handler(int argc,char**argv,int bloblen,void*blob);
 void dropuser_handler(int argc,char**argv,int bloblen,void*blob);

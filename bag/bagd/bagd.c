@@ -53,6 +53,9 @@
 char *connectstring=0;
 char *servername="";
 
+/*is this virtualhost/managed mode?*/
+int vhost=0;
+
 /* nsockets = number of listening sockets
  * sockets = array of socket fd's
  * isssl = bool array: is the corresponding socket listening for SSL connections
@@ -94,7 +97,8 @@ static void deconfig()
         socketpaths=0;
 }
 
-/*load configuration from the server, currently only sockets are supported*/
+/*load configuration from the server, only sockets are supported,
+ the remainder is loaded inide bagchild*/
 static void config()
 {
         dbConn *con;
@@ -358,6 +362,8 @@ void daemonize()
 \t\t-n --name --servername <name>\n\
 \t\t\tset the servername, used to distinguish configuration\n\
 \t\t\tof different servers on the same database\n\n\
+\t\t-m --managed\n\
+\t\t\tswitch to managed mode, connection socket is expected at stdin\n\n\
 \tConnection Parameters:\n\
 \t\tdbname=name of the database\n\
 \t\thostaddr=host to connect to (default: localhost)\n\
@@ -371,7 +377,7 @@ static void help(const char*name)
 
 /*parse commandline*/
 static int godaemon=1;
-static char sopt[]="hvf:dn:q";
+static char sopt[]="hvf:dn:qm";
 static struct option lopt[]={
         {"help",0,0,'h'},
         {"version",0,0,'v'},
@@ -380,6 +386,7 @@ static struct option lopt[]={
         {"querydebug",0,0,'q'},
         {"servername",1,0,'n'},
         {"name",1,0,'n'},
+        {"managed",0,0,'m'},
         {0,0,0,0}
 };
 static void handleoptions(int argc,char**argv)
@@ -401,6 +408,8 @@ static void handleoptions(int argc,char**argv)
                         case 'f':file=optarg;break;
 
                         case 'n':servername=optarg;break;
+
+                        case 'm':vhost=1;break;
 
                         default:help(argv0);exit(1);break;
                 }
@@ -436,7 +445,7 @@ static void handleoptions(int argc,char**argv)
         }
 }
 
-void main(int argc,char**argv)
+int main(int argc,char**argv)
 {
         int i,l;
         struct sigaction sa;
@@ -461,6 +470,20 @@ void main(int argc,char**argv)
         sigaction(SIGCHLD,&sa,0);
         sigaction(SIGPIPE,&sa,0);
         sigaction(SIGINT,&sa,0);
+
+        /*if we are in managed mode, we immediately switch to childmode*/
+        if(vhost){
+                struct s_sockethandler*sh;
+                /*redirect output...*/
+                tosyslog=1;
+                chdir("/");
+                /*create handler*/
+                sh=newstreamhandler(0);
+                /*switch to child mode*/
+                bagchild(sh,connectstring);
+                /*leave*/
+                exit(0);
+        }/*else go to normal server mode*/
 
         /*check config*/
         config();
@@ -504,4 +527,7 @@ void main(int argc,char**argv)
                         }
 
         }
+
+        /*shouldn't be reached, but anyway...*/
+        return 0;
 }
