@@ -104,37 +104,43 @@ INSERT INTO blessinglevel (blname,blcomment) VALUES('bugfix','bugfix release');
 INSERT INTO blessinglevel (blname,blcomment) VALUES('broken','broken version, don\'t use');
 
 #versions of objects:
+CREATE TABLE changeset(
+        csid bigserial primary key,
+        csprid int references project(prid) not null,
+        csbrid int references branch(brid) not null,
+
+        csblesslev int references blessinglevel(blid),
+
+        ovcomment text,
+
+        -- does not reference to avoid problems with deleted users
+        csusr varchar(16) not null,
+        cstime int
+);
+
 CREATE TABLE objectversion(
         ovid bigserial primary key,
         ovparent bigint references objectversion(ovid),
+        ovcsid bigint references changeset(csid) not null,
 
-        ovprid int references project(prid) not null,
-        ovbrid int references branch(brid) not null,
         ovobid bigint references vobject(obid) not null,
         ovnum int not null,
 
         ovcontent OID,
-        ovcomment text,
         ovencoding varchar(32),
         ovrights varchar(16), --File rights (Unix: rwxrwxrwx...), this will eventually change to real ACL's
 
-        ovblesslev int references blessinglevel(blid),
-
-        -- does not reference to avoid problems with deleted users
-        ovusr varchar(16) not null,
-        ovtime int,
-
-        unique (ovnum,ovobid,ovprid,ovbrid)
+        unique (ovnum,ovobid,ovcsid)
 );
 
 #on insert: check wheter this combination of branch and project is allowed:
-CREATE RULE objectversion_rule_prid_brid_i AS ON INSERT
-TO objectversion WHERE NOT new.ovbrid IN (SELECT pbbrid FROM projectbranch WHERE pbprid = new.ovprid)
+CREATE RULE changeset_rule_prid_brid_i AS ON INSERT
+TO changeset WHERE NOT new.csbrid IN (SELECT pbbrid FROM projectbranch WHERE pbprid = new.csprid)
 DO INSTEAD NOTHING;
 
 #on update: don't let users change object, branch or project or an object version
-CREATE RULE objectversion_rule_prid_brid_u AS ON UPDATE
-TO objectversion WHERE NOT new.ovbrid != old.ovbrid OR new.ovprid != old.ovprid OR old.ovobid != new.ovobid
+CREATE RULE changeset_rule_prid_brid_u AS ON UPDATE
+TO changeset WHERE NOT new.csbrid != old.csbrid OR new.csprid != old.csprid
 DO INSTEAD NOTHING;
 
 #on delete: automagically remove blob

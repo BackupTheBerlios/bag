@@ -17,7 +17,7 @@
 
 #include "../config.h"
 #include "sql.h"
-#include "log.h"
+#include <log.h>
 #include "query.h"
 
 #include <stdarg.h>
@@ -47,6 +47,7 @@
 #include "bagssl.h"
 
 #include "bagd.h"
+#include "../libbag/debug.h"
 
 /*database configuration*/
 char *connectstring=0;
