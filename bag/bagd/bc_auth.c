@@ -20,7 +20,9 @@
 #include "bc_main.h"
 #include "md5.h"
 
+#ifdef HAVE_PAM
 #include <security/pam_appl.h>
+#endif
 
 #include <libpq-fe.h>
 #include "sql.h"
@@ -37,6 +39,9 @@ char*username=0;
 #define E_STORAGE "-0 internal storage error, please contact the server admin\n"
 
 #define E_AUTHOK "+0 auth: ok\n"
+
+
+#ifdef HAVE_PAM
 
 static int fpamconv(int num,const struct pam_message **msg,struct pam_response **rsp,void*appdt)
 {
@@ -82,7 +87,7 @@ static int pamauth(const char*user,struct pam_conv*conv)
     return retval == PAM_SUCCESS ;       /* indicate success */
 }
 
-
+#endif /*def HAVE_PAM*/
 
 
 static void auth_handler(int argc,char**argv,int bloblen,void*blob)
@@ -124,6 +129,7 @@ static void auth_handler(int argc,char**argv,int bloblen,void*blob)
         
         /*try password auth*/
         if(argc==3){
+#ifdef HAVE_PAM
                 if(method&AUTH_PAM){//PAM authentification requested
                         struct pam_conv pamconv = {
                                 fpamconv,
@@ -137,6 +143,7 @@ static void auth_handler(int argc,char**argv,int bloblen,void*blob)
                                 return;
                         }
                 }
+#endif /*def HAVE_PAM*/
                 if(method&AUTH_INTERN){//internal MD5
                         char mdb[33],*pwd;
                         

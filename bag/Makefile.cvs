@@ -1,5 +1,5 @@
 all:
-	aclocal -I /usr/local/share/aclocal
+	aclocal -I /usr/local/share/aclocal -I ./config
 	automake
 	autoconf
 	autoheader

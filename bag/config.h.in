@@ -2,6 +2,12 @@
 
 #undef PACKAGE
 #undef VERSION
+#undef HAVE_PAM
+#undef HAVE_GNUTLS
+#undef HAVE_POSTGRES
+
+/* Define if you have the </include//libpq-fe.h> header file.  */
+#undef HAVE__INCLUDE__LIBPQ_FE_H
 
 /* Define if you have the <dlfcn.h> header file.  */
 #undef HAVE_DLFCN_H

@@ -24,11 +24,19 @@ AC_PROG_LIBTOOL
 
 dnl Checks for libraries.
 
-AM_PATH_LIBGNUTLS( 0.4.2,, AC_MSG_ERROR([[
+have_gnutls=0
+AM_PATH_LIBGNUTLS( 0.4.2, [
+	AC_DEFINE(HAVE_GNUTLS)
+	have_gnutls=1
+], AC_MSG_WARN([[
 ***
 *** libgnutls was not found. You may want to get it from
 *** ftp://ftp.gnutls.org/pub/gnutls/
+*** Bag will be created without crypto support
+***
 ]]))
+
+AM_CONDITIONAL(HAVE_GNUTLS,[test have_gnutls = 1])
 
 dnl Checks for header files.
 
@@ -41,9 +49,26 @@ dnl Checks for library functions.
 
 
 dnl Postgres, there is probably a much better way:
-CFLAGS="$CFLAGS -I/usr/include/postgresql"
-LDFLAGS="$LDFLAGS -lpq -lssl -lpam"
+BAG_POSTGRES
 
+if test "$HAVE_POSTGRES" != 1 ; then
+	AC_MSG_WARN([[
+*** 
+*** Postgres was not found, unable to build the server.
+*** The client will be build.
+***
+]])
+fi
+
+AM_CONDITIONAL(HAVE_POSTGRES,[test $HAVE_POSTGRES = 1])
+
+
+dnl PAM
+
+AC_CHECK_LIB(pam, pam_authenticate, [
+	AC_DEFINE(HAVE_PAM)
+	AC_SUBST(PAM_LDFLAGS,"-lpam")
+])
 
 AC_OUTPUT(./Makefile libbag/Makefile bagd/Makefile bag/Makefile doc/Makefile diff/Makefile bagd/sql/Makefile Makefile )
 
