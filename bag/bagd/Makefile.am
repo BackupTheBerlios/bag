@@ -1,19 +1,7 @@
-####### kdevelop will overwrite this part!!! (begin)##########
-noinst_LIBRARIES = libbagd.a
-
-INCLUDES = $(all_includes)
-
-libbagd_a_SOURCES = bagdinitdb.c 
-
-SUBDIRS = sql 
-
-EXTRA_DIST = bagdinitdb.c initdb.sql sql_const.h 
-
-####### kdevelop will overwrite this part!!! (end)############
-
-bin_PROGRAMS = bagdinitdb
+bin_PROGRAMS = bagdinitdb bagd
 
 bagdinitdb_SOURCES = bagdinitdb.c
+bagd_SOURCES = bagd.c bagchild.c bagstream.c bagssl.c
 
 bagdinitdb.c bagd.c: sql.h
 

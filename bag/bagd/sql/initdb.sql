@@ -33,7 +33,7 @@ CREATE TABLE vcsuser(
 # u - administrate users
 
 CREATE RULE vcsuser_cert_d AS ON DELETE
-TO vcsuser DO
+TO vcsuser WHERE old.usrcert <> NULL DO
 SELECT lo_unlink(old.usrcert);
 
 CREATE RULE vcsuser_cert_u AS ON UPDATE
@@ -122,6 +122,11 @@ DO INSTEAD NOTHING;
 CREATE RULE objectversion_rule_prid_brid_u AS ON UPDATE
 TO objectversion WHERE NOT new.ovbrid != old.ovbrid OR new.ovprid != old.ovprid OR old.ovobid != new.ovobid
 DO INSTEAD NOTHING;
+
+#on delete: automagically remove blob
+CREATE RULE objectversion_rule_ovcontent_d AS ON DELETE
+TO objectversion WHERE old.ovcontent <> NULL DO
+SELECT lo_unlink(old.ovcontent);
 
 #tag definition:
 CREATE TABLE tag(

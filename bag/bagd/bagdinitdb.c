@@ -49,7 +49,7 @@
         -P --initpasswd <passwd> - initial Password for the initial user (bag)\n\
         -a --readaccess <user,user...> - DB Users to have read access\n\
         -A --writeaccess <user,user...> - DB Users to have write access\n\
-        -S --initsocket /<socketname> - initial Socketname (/tmp/baginit)"
+        -S --initsocket /<socketname> - initial Socketname (/tmp/baginit)\n"
         
 
 const char optstring[]="hvVs:p:d:u:w::o:i:U:P::a:A:S:";
@@ -86,7 +86,7 @@ void setecho(int b)
         tcsetattr(STDIN_FILENO,TCSANOW,&t);
 }
 
-void exitdb(PQconn*con)
+void exitdb(PGconn*con)
 {
         PQfinish(con);
         exit(1);
@@ -148,7 +148,7 @@ int main(int argc,char**argv)
 
         if(!dbname){
                 printf("DB Name: ");
-                scanf("%s",dbbuf)
+                scanf("%s",dbbuf);
                 dbname=dbbuf;
         }
         if(!user){
@@ -183,8 +183,8 @@ int main(int argc,char**argv)
         sprintf(ipwd2buf,"createdb -h %s -p %s -U %s %s %s",
                 server,port,user,passwd?"-W":"",passwd?passwd:"");
         if(opt=system(ipwd2buf)){
-                fprintf("Error creating Database: %s\n",
-                        op==-1?"Unable to call createdb.":"Bad return code from createdb.");
+                fprintf(stderr,"Error creating Database: %s\n",
+                        opt==-1?"Unable to call createdb.":"Bad return code from createdb.");
                 exit(1);
         }
 
@@ -202,7 +202,7 @@ int main(int argc,char**argv)
         
         res=PQexec(con,SQL_TRANS_BEGIN);
         if(!res || PQresultStatus(res) != PGRES_COMMAND_OK){
-                fprintf("Unable to create transaction: %s\n",PQerrorMessage(con));
+                fprintf(stderr,"Unable to create transaction: %s\n",PQerrorMessage(con));
                 if(res)PQclear(res);
                 exitdb(con);
         }
@@ -210,7 +210,7 @@ int main(int argc,char**argv)
 
         res=PQexec(con,SQL_INITDB);
         if(!res || PQresultStatus(res) != PGRES_COMMAND_OK){
-                fprintf("Unable to create tables: %s\n", PQerrorMessage(con));
+                fprintf(stderr,"Unable to create tables: %s\n", PQerrorMessage(con));
                 if(res)PQclear(res);
                 PQclear(PQexec(con,SQL_TRANS_ROLLBACK));
                 exitdb(con);
@@ -219,14 +219,14 @@ int main(int argc,char**argv)
 
         res=PQexec(con,SQL_TRANS_COMMIT);
         if(!res || PQresultStatus(res) != PGRES_COMMAND_OK){
-                fprintf("Unable to commit transaction: %s\n", PQerrorMessage(con));
+                fprintf(stderr,"Unable to commit transaction: %s\n", PQerrorMessage(con));
                 if(res)PQclear(res);
                 exitdb(con);
         }
-        PQclear(con);
+        PQclear(res);
 
         if(verbose)
-                printf("Creating initial user\n);
+                printf("Creating initial user\n");
 
         
 }
