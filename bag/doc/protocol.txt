@@ -1,0 +1,186 @@
+C/S protocol
+================
+
+
+General Format
+-----------------
+
+Client commands:
+<cmdid> <bloblength> <cmd> <parms...>\n
+<data of length bloblength>
+
+ <cmdid> - unique number denoting the command
+ <bloblength> - length of optional data
+ <cmd> - command
+
+Server answers/interrupts:
+<errcode> <cmdid> <bloblength> <answer>\n
+<data of length bloblength>
+
+ <errcode> - success or failure code
+ <cmdid> - command referenced by this answer
+ <bloblength> - length of data
+ <answer> - answer string or machine readable error info
+ <data> - answer data (eg. patchfile) or error message
+
+
+VRL - Version Ressource Locator
+---------------------------------
+
+<proto>://<server>/<project>/<branch>/<objid>/<version>
+
+<proto>: bagp, bagps
+<server>: #<virtual server>, <server-name-or-ip>[:<port>], self
+<project>: project name
+<branch>: branch name
+<objid>: Object ID (if left out: start object)
+<version>: version number of that object (if left out: newest) or tag
+
+possible query parameters (with default):
+recursive=1
+ if the object is a directory: retrieve recursive
+diff=<version>
+ retrieve difference from version to the one referenced
+
+
+Error codes
+---------------------
+
+Error codes have the format abc, where a is domain and b/c are defined within
+this domain.
+
+0       general/protocol
+
+00      internal
+000     no error
+001     unknown command
+002     access denied
+003     not found
+
+01      authentication
+010     authentication failed
+011     anonymous login not permitted
+018     no client certificate, but SSL-auth requested
+019     invalid client certificate or certificate does not fit to this username
+
+02      (protocol) config
+020     illegal gziplevel
+021     illegal config key or value not found
+
+03
+030
+
+Handshake commands
+--------------------
+
+auth <username> <passwd>
+ request login via password
+
+ Error codes 010, 000.
+
+ The server may close the connection after a certain amount of failed trials,
+ depending on its configuration
+
+ Possible SSL-extension: if passwd is left blank the server may authenticate
+ against the SSL-certificate from the client. Error codes: 018, 019.
+
+anonymous
+ request anonymous (read-only) login.
+
+ Error codes: 000, 011.
+
+Connection configuration/control
+-----------------------------------
+
+packlevel <level>
+ set a gzip packlevel (permissible: 0, g1-9, 0=off, 9=max)
+
+ Error codes: 000, 020.
+ 020 adds a list of allowed ziplevels (currently "0 g1 g2 g3 g4 g5 g6 g7 g8 g9)
+
+quit
+ No answer, just closed the stream.
+
+Server configuration
+----------------------
+
+config <key> [<value>]
+ retrieve value for key, or set a new value
+
+ Error codes: 000, 021, 002.
+
+getusers
+ get all usernames
+
+ Error codes: 000, 002.
+
+getuseracl <username>
+ get ACL for this user
+
+ Error codes: 000, 002, 003.
+
+setuseracl <username> <aclstring>
+
+ Error codes: 000, 002, 003.
+
+createuser <username> <password> <aclstring>
+
+dropuser <username>
+
+setpassword <username> <password>
+
+disableuser <username>
+ deletes the password of this user, thus disables him/her to log in.
+
+Meta info
+-----------
+
+getmeta projects|branches|tags|blessinglevels
+
+Projects
+----------
+
+projectacl <project> <user> [<aclstring>]
+ get/set acl of a user
+
+projectbranchacl <project> <branch> <user> [<aclstring>]
+
+projectbranches <project>
+ list all branches of the project
+
+projectcreatebranch <project> <newbranch> <VRL>
+ create a new branch starting with VRL  (may contain a query)
+
+Objects
+----------
+
+getpatch <VRL>
+ Get a complete Patch file for this VRL.
+
+getpatchbylist
+BLOB: patchlist
+ Get a patch file for all VRL's in the list (where one VRL is on one line).
+
+getfull <VRL>
+ Get a patch file that creates the full files from zero.
+
+getfullbylist
+BLOB: VRL-List
+
+putpatch
+BLOB
+ send a patch to the server
+
+putfull
+BLOB
+ Send a patch file to the server which constructs the files from zero, the
+ server will do the diffing.
+
+settag <tag>
+BLOB: VRL-List
+
+gettags <VRL>
+
+getmergepoints <VRL>
+
+setmergepoint <VRL> <VRL>

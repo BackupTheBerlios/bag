@@ -1,0 +1,79 @@
+Text Diff
+==========
+
+This applies to text files only. The algorithm and format work on complete
+lines and are sensitive on tabs and spaces.
+
+The parser algorithm treats \n, \r, \r\n and \n\r as a single newline. The
+combinations \r\r and \n\n are treated as two newlines.
+
+In contrast to GNU Diff it does not expect a trailing newline at the end of the
+file. Thus a trailing newline will create an empty  last line.
+
+Diff Format
+------------
+
+The first character of each line is a command about what to do with this line.
+The remainder of the line depends on the first character:
+
+@objectid
+ open a new object (if a combined patch: close the last one)
+
+$
+ flatten the object (ie. renumber the lines) and continue with the next patch
+ on this same object, identical to @objectid if objectid is identical to the
+ last one
+
++line
+ inserted line with complete text
+
+-line
+ deleted line with complete text
+
+=line
+ identical line with complete text
+
+*num
+ number of inserted lines (not very useful, only here for completenes)
+
+~num
+ number of deleted lines
+
+#num
+ number of identical lines
+
+
+
+Diff Algorithm
+---------------
+
+The algorithm is linear with a quite short recursion.
+
+It basically searches the two files by comparing the lines. If they are not
+identical there are two possibilities: a line has been deleted or inserted.
+To differentiate the algorithm only needs to search for this original line in
+the new file: if it finds it, something was inserted, if not it was deleted.
+To limit the impact of identical lines (eg. the closing "}" of functions) the
+search is limited to a certain amount of lines (MAXSEARCH in the source) and
+a certain division of the complete amount of lines (DIVSEARCH).
+
+Yet, I guess this algorithm can still use some optimization...
+...anybody understood the specific optimizations of GNU Diff?
+
+Patch Algorithm
+----------------
+
+Simple. The algorithm follows linear the commandments of the patch.
+
+Merge Algorithm
+----------------
+
+More tricky. Here is a changed file and a patch to its ancestor.
+
+[Need to think about something - diff3 like?]
+
+
+Binary Diff
+============
+
+to be written

@@ -1,0 +1,33 @@
+SQL Files
+===========
+
+Each of these files contains one or multiple SQL statements. They must not
+contain any Transaction statements (BEGIN TRANSACTION, ROLLBACK, COMMIT)!
+Except for the special transaction-files (trans_begin.sql, trans_rollback.sql,
+trans_commit.sql).
+
+The preprocessor detects comment lines - lines starting with "--" or "#" and
+optionally some spaces. Lines that contain valid SQL code and continue with a
+SQL comment (--) will not be detected, you must know whether your SQL-processor
+knows how to handle it if you move to anything else than PgSQL, but the code
+will break then anyway.
+
+---Does PgSQL support "--" in remote commands?---
+
+Parameters have the format "$" plus one other character, which will be used to
+identify it (this differs much from JDBC!). This is done for the case the
+parameters are moved while optimizing certain statements.
+
+Example of a SQL-file:
+###################
+#example.sql
+#written by Konrad Rosenbaum
+#optimized for being stupid, by KR
+#
+#This file will generate ../sql_example.h and #define SQL_EXAMPLE
+#
+#Param $a: some arbitrary trash
+#      $b: some other trash
+
+SELECT * FROM trashtable WHERE trashkey = $a OR something LIKE $b;
+###################
