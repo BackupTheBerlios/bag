@@ -136,6 +136,17 @@ class BagMessage
                 return cln;
         }
 
+        /** get the arguments as a single string*/
+        public String getArgStr()
+        {
+                String r="";
+                for(int i=0;i<args.size();i++){
+                        r+=(String)args.elementAt(i);
+                        if(i<args.size())r+=" ";
+                }
+                return r;
+        }
+        
         /** return the blob of the message*/
         public byte[] getBlob()
         {

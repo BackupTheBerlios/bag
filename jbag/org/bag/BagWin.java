@@ -1,3 +1,5 @@
+/*Main window of an open connection */
+
 package org.bag;
 
 import javax.swing.*;
@@ -6,7 +8,7 @@ import java.sql.*;
 import java.net.*;
 import java.io.*;
 
-class BagWin extends JFrame implements WindowListener
+class BagWin extends JFrame implements WindowListener,ActionListener
 {
         /** listing of allowable connection types (currently ignored)*/
         public static final String[] CONNTYPES=
@@ -16,6 +18,8 @@ class BagWin extends JFrame implements WindowListener
         private BagSocket bsock;
 
         private String hello;
+
+        private JTabbedPane tab;
 
         /** Tries to open a connection to the Bag Server. Throws BagWin.OpenException
             on error. Opens a connection Window on success.
@@ -33,8 +37,13 @@ class BagWin extends JFrame implements WindowListener
                         sock=new Socket(host,port);
                         bsock=new BagSocket(sock);
 
-                        //consume hello message
+                        //consume hello message, check for vhost
                         hello=bsock.readLine();
+                        if(hello.substring(3,8).equals("vhost")){
+                                System.out.println("using virtual host "+host);
+                                bsock.write(("0 vhost "+host+"\n").getBytes());
+                                hello=bsock.readLine();
+                        }
                         setTitle(hello.substring(3));
                         
                         BagMessage m=new BagMessage("auth").add(user).add(passwd).send(bsock);
@@ -51,6 +60,29 @@ class BagWin extends JFrame implements WindowListener
                         dispose();
                         throw new OpenException("Communication Error: "+e.getMessage());
                 }
+                //////
+                setSize(800,600);
+
+                //////
+                JMenuBar mb=new JMenuBar();
+                JMenu m;
+                JMenuItem mi;
+                setJMenuBar(mb);
+                //////
+                mb.add(m=new JMenu("Connection"));
+
+                m.add(mi=new JMenuItem("Close Connection",'c'));
+                mi.setActionCommand("close");
+                mi.addActionListener(this);
+                                
+                tab=new JTabbedPane();
+                getContentPane().add(tab);
+                
+                JComponent c;
+                tab.add(new BWProfile(this,conntype,host,port,user));
+                tab.add(new BWUsers(this));
+                tab.add(new JLabel("hello"));
+                
                 show();
         }
 
@@ -58,6 +90,9 @@ class BagWin extends JFrame implements WindowListener
                 public OpenException(String s){super(s);}
         }
 
+
+        public BagSocket getSocket(){return bsock;}
+        
         /*WindowListener*/
         public void windowActivated(WindowEvent e){}
         public synchronized void windowClosed(WindowEvent e)
@@ -74,4 +109,22 @@ class BagWin extends JFrame implements WindowListener
         public void windowDeiconified(WindowEvent e){}
         public void windowIconified(WindowEvent e){}
         public void windowOpened(WindowEvent e){}
+
+        /*ActionListener*/
+        public void actionPerformed(ActionEvent event)
+        {
+                String act=event.getActionCommand();
+                if("close"==act){
+                        try{//try to quit normally
+                                (new BagMessage("quit")).send(bsock);
+                        }catch(Exception ex){}
+                        try{//use a new try to be sure it is done:
+                                bsock.close();
+                        }catch(Exception ex){}
+                        bsock=null;//nullify to be sure no one else tries to close it again
+                        this.dispose();
+                }else
+
+                System.out.println("Unknown action event: " +event.getActionCommand());
+        }
 }

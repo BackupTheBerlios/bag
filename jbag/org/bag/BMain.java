@@ -1,3 +1,5 @@
+/* Main Window from which one can open new connections */
+
 package org.bag;
 
 import javax.swing.*;
@@ -66,7 +68,7 @@ public class BMain extends JScrollPane  implements ActionListener
 "<li>Konrad Rosenbaum &lt;konrad.rosenbaum@gmx.net&gt<br>Design, Base Implementation"+
 
 "</ul><p><h2>Credits:</h2><ul>"+
-"<li>The Bag Project (http://????)"+
+"<li>The Bag Project (http://bag.berlios.de)"+
 "<li>PostgreSQL (http://www.postgresql.org)"+
 "<li>Sun Java2 (http://www.java.sun.com)"+
 "</ul><hr></html>";
@@ -219,7 +221,7 @@ public class BMain extends JScrollPane  implements ActionListener
                 {
                         try {
                                 //open Bag Connection Window
-                                new BagWin(conntype.getActionCommand(),
+                                new BagWin((String)conntype.getSelectedItem(),
                                         server.getText(),
                                         Integer.decode(port.getText()).intValue(),
                                         user.getText(),passwd.getText());

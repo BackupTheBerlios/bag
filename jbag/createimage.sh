@@ -39,7 +39,8 @@ public class CI {
         private static String getvar(String f)
         {
                 String v=f;
-                if(v.startsWith("./"))v=v.substring(2);
+                int i=v.lastIndexOf("/");
+                if(i>-1)v=v.substring(i+1);
                 return v.replace('.','_').replace('/','_');
         }
 }
