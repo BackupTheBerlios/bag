@@ -30,7 +30,11 @@ Bag-Client
 Protocol-changers
 -------------------
 
-*HTTP, HTTPS (to hop over proxies)
+*HTTP, HTTPS (to hop over proxies, see fwt project)
 *Proxy/SOCKS (if the proxy allows CONNECT to non 443-ports, if we have SOCKS)
 *SMTP - does this make any sense at all?
 
+Other stuff
+-------------
+
+*replace ASSERT by graceful error handling

@@ -71,5 +71,5 @@ AC_CHECK_LIB(pam, pam_authenticate, [
 	AC_SUBST(PAM_LDFLAGS)
 ])
 
-AC_OUTPUT(./Makefile libbag/Makefile bagd/Makefile bag/Makefile doc/Makefile diff/Makefile bagd/sql/Makefile Makefile tools/Makefile )
+AC_OUTPUT(./Makefile libbag/Makefile bagd/Makefile bag/Makefile doc/Makefile diff/Makefile bagd/sql/Makefile Makefile )
 
