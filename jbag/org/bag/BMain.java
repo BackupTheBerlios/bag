@@ -24,10 +24,10 @@ public class BMain extends JScrollPane  implements ActionListener
                 String act=event.getActionCommand();
                 if("exit"==act)doexit();else
                 if("debugcon"==act)dodebug();else
-
+                if("opencon"==act)doopen();else
                 if("about"==act)aboutBox();else
 
-                System.out.println(event.getActionCommand());
+                System.out.println("Unknown action event: " +event.getActionCommand());
         }
 
         protected void doexit()
@@ -46,6 +46,12 @@ public class BMain extends JScrollPane  implements ActionListener
         {
                 OpenDebug od=new OpenDebug();
                 od.show();
+        }
+
+        private void doopen()
+        {
+                OpenBag ob=new OpenBag();
+                ob.show();
         }
 
 
@@ -154,6 +160,78 @@ public class BMain extends JScrollPane  implements ActionListener
                                  JOptionPane.ERROR_MESSAGE);
                         }
 
+                }
+        }
+
+
+        /////////////////////////////////////////////////////////
+        private class OpenBag extends JDialog implements ActionListener
+        {
+                private final JTextField server,port,user;
+                private final JPasswordField passwd;
+                private final JComboBox conntype;
+                public OpenBag()
+                {
+                        setTitle("Open new Bag Connection");
+                        Container c=getContentPane();
+                        GridBagLayout g;
+                        c.setLayout(g=new GridBagLayout());
+
+                        GridBagConstraints gc=new GridBagConstraints();
+                        gc.gridwidth=GridBagConstraints.REMAINDER;
+                        c.add(new JLabel("Server/Path:"));
+                        c.add(server=new JTextField("localhost",32),gc);
+
+                        c.add(new JLabel("Port:"));
+                        c.add(port=new JTextField("2410",32),gc);
+
+                        c.add(new JLabel("Connection Type:"));
+                        c.add(conntype=new JComboBox(BagWin.CONNTYPES),gc);
+                        conntype.setEditable(false);
+
+                        c.add(new JLabel("Username:"));
+                        c.add(user=new JTextField(32),gc);
+
+                        c.add(new JLabel("Password:"));
+                        c.add(passwd=new JPasswordField(32),gc);
+
+                        c.add(new JLabel("  "),gc);
+
+                        JButton btn;
+                        c.add(btn=new JButton("Connect"));
+                        btn.setActionCommand("connect");
+                        btn.addActionListener(this);
+                        c.add(btn=new JButton("Cancel"));
+                        btn.setActionCommand("cancel");
+                        btn.addActionListener(this);
+
+                        pack();
+                }
+
+                public void actionPerformed(ActionEvent event)
+                {
+                        String act=event.getActionCommand();
+                        if("cancel"==act)dispose();else
+                        if("connect"==act)doconnect();
+                }
+
+                private void doconnect()
+                {
+                        try {
+                                //open Bag Connection Window
+                                new BagWin(conntype.getActionCommand(),
+                                        server.getText(),
+                                        Integer.decode(port.getText()).intValue(),
+                                        user.getText(),passwd.getText());
+                                //free myself
+                                dispose();
+                        }catch(BagWin.OpenException e){
+                                JOptionPane.showMessageDialog(this,e.getMessage(),
+                                        "Bag Connection Error",JOptionPane.ERROR_MESSAGE);
+                        }catch(NumberFormatException e){
+                                JOptionPane.showMessageDialog(this,"Port must be a number >0",
+                                        "Error",JOptionPane.ERROR_MESSAGE);
+                        }
                 }
         }
 }

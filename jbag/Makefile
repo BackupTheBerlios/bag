@@ -9,6 +9,12 @@
 JAVAC 	= javac
 JAVA 	= java
 JAR	= jar
+JDOC	= javadoc
+
+
+JFLAGS	= -deprecation
+JDOCFLAGS= -private -version -author
+
 
 #Directory/File with JDBC driver for PostgreSQL
 PGJDBC	= /usr/lib/pgsql/share/jdbc/postgresql.jar
@@ -39,19 +45,26 @@ bag.manifest:
 	echo Class-Path: $(LIBS) >>$@
 
 
-# $(CLASSES) is good enough for dependencies, but does not suffice for the jar: intenal classes are not covered
+# $(CLASSES) is good enough for dependencies, but does not suffice for the jar:
+# intenal classes are not covered
 bag.jar: $(CLASSES) bag.manifest
 	jar cmf bag.manifest $@ `find . -name '*.class'`
 
 %.class: %.java
-	javac $<
+	javac $(JFLAGS) $<
 
 
 org/bag/Images.java: $(IMGS)
 	./createimage.sh $(IMGS) >$@
 
+
+doc:
+	mkdir -p doc/javadoc
+	rm -rf doc/javadoc/*
+	$(JDOC) $(JDOCFLAGS) -d doc/javadoc `find . -name '*.java'`
+
 .SUFFIXES:
-.PHONY: clean install
+.PHONY: clean install doc
 
 clean:
 	rm -rf *.manifest `find . -name '*.class'` org/bag/Images.java
